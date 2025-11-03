@@ -1,0 +1,83 @@
+plugins {
+    id 'java'
+    id 'com.github.davidmc24.gradle.plugin.avro' version '1.7.0'
+}
+
+group = 'com.aws.glue'
+version = '1.0.0-SNAPSHOT'
+description = 'AWS Glue Schema Registry Java Client'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // AWS SDK for Glue
+    implementation 'software.amazon.awssdk:glue:2.20.0'
+    
+    // AWS SDK Core
+    implementation 'software.amazon.awssdk:sdk-core:2.20.0'
+    
+    // AWS Auth
+    implementation 'software.amazon.awssdk:auth:2.20.0'
+    
+    // JSON Processing
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    
+    // Avro
+    implementation 'org.apache.avro:avro:1.11.3'
+    
+    // Logging
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'org.slf4j:slf4j-simple:1.7.36'
+    
+    // Test Dependencies
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation 'org.mockito:mockito-core:5.3.1'
+}
+
+// Avro plugin configuration
+avro {
+    source('src/main/resources')
+    stringType = 'String'
+}
+
+// Ensure generated Avro classes are included in compilation
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java', 'build/generated-sources/avro/java/main']
+        }
+    }
+}
+
+// Test configuration
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+}
+
+// Tasks configuration
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+// JAR task configuration
+jar {
+    manifest {
+        attributes(
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': 'AWS Glue Schema Registry'
+        )
+    }
+}

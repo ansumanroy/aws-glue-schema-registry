@@ -1,0 +1,19 @@
+# Example backend configuration file
+# Copy this to backend.tf and customize for your environment
+# Or use terraform init -backend-config=backend.hcl
+
+# If using a separate backend configuration file, uncomment and use:
+# terraform {
+#   backend "s3" {
+#     bucket         = "aws-glue-assets-651914028873-us-east-1"
+#     key            = "terraform/glue-schema-registry/terraform.tfstate"
+#     region         = "us-east-1"
+#     encrypt        = true
+#     dynamodb_table = null  # Optional: Add DynamoDB table for state locking
+#   }
+# }
+
+# For DynamoDB state locking (recommended for team environments):
+# 1. Create a DynamoDB table with primary key "LockID" (String)
+# 2. Uncomment and update the dynamodb_table value above
+# 3. Example: dynamodb_table = "terraform-state-lock"
