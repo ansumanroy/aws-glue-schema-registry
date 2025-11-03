@@ -55,6 +55,14 @@ terraform-init: check-terraform check-aws ## Initialize Terraform with S3 backen
 	@echo "$(COLOR_YELLOW)State Key: terraform/glue-schema-registry/terraform.tfstate$(COLOR_RESET)"
 	cd $(TERRAFORM_DIR) && terraform init
 
+terraform-clean: ## Clean Terraform cache and reinitialize
+	@echo "$(COLOR_BLUE)Cleaning Terraform cache...$(COLOR_RESET)"
+	cd $(TERRAFORM_DIR) && rm -rf .terraform .terraform.lock.hcl
+	@echo "$(COLOR_GREEN)Terraform cache cleared. Run 'make terraform-init' to reinitialize.$(COLOR_RESET)"
+
+terraform-reinit: terraform-clean terraform-init ## Clean and reinitialize Terraform
+	@echo "$(COLOR_GREEN)Terraform reinitialized successfully!$(COLOR_RESET)"
+
 terraform-validate: check-terraform terraform-init ## Validate Terraform configuration
 	@echo "$(COLOR_BLUE)Validating Terraform configuration...$(COLOR_RESET)"
 	cd $(TERRAFORM_DIR) && terraform validate
