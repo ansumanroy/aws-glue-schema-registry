@@ -18,11 +18,11 @@ variable "registry_description" {
 variable "schemas" {
   description = "Map of schemas to create in the registry"
   type = map(object({
-    description      = optional(string)
-    data_format      = string # AVRO, JSON, PROTOBUF
+    description       = optional(string)
+    data_format       = string # AVRO, JSON, PROTOBUF
     schema_definition = string
-    compatibility    = optional(string, "BACKWARD") # BACKWARD, BACKWARD_ALL, DISABLED, FORWARD, FORWARD_ALL, FULL, FULL_ALL, NONE
-    tags             = optional(map(string), {})
+    compatibility     = optional(string, "BACKWARD") # BACKWARD, BACKWARD_ALL, DISABLED, FORWARD, FORWARD_ALL, FULL, FULL_ALL, NONE
+    tags              = optional(map(string), {})
   }))
   default = {}
 }

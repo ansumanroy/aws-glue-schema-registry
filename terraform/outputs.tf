@@ -8,10 +8,21 @@ output "registry_arn" {
   value       = aws_glue_registry.schema_registry.arn
 }
 
-output "schemas" {
-  description = "Map of created schemas with their ARNs"
-  value = {
-    for k, v in aws_glue_schema.schema : k => {
+# output "schemas" {
+#   description = "Map of created schemas with their ARNs"
+#   value = {
+#     for k, v in aws_glue_schema.schema : k => {
+#       schema_name = v.schema_name
+#       schema_arn  = v.arn
+#       version_id  = v.latest_schema_version
+#     }
+#   }
+# }
+
+output "dynamic_schemas" {
+  description = "All dynamic Glue schemas information"
+  value = { for k, v in aws_glue_schema.dynamic_schemas :
+    k => {
       schema_name = v.schema_name
       schema_arn  = v.arn
       version_id  = v.latest_schema_version

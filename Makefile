@@ -10,6 +10,7 @@ AWS_REGION ?= us-east-1
 TF_VAR_REGISTRY_NAME ?= $(shell echo "glue-schema-registry-$$(whoami)-$$(date +%s | tail -c 5)" | tr '[:upper:]' '[:lower:]')
 TF_VAR_AWS_REGION ?= $(AWS_REGION)
 TF_VAR_SALESFORCE_AUDIT_COMPATIBILITY ?= BACKWARD
+TF_PROVIDER_ARCH=arm64
 
 # Colors for output
 COLOR_RESET := \033[0m
