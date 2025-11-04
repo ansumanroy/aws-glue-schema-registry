@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SalesforceAuditSerializationTest {
     
     private static GlueSchemaRegistryClient client;
-    private static final String REGISTRY_NAME = System.getenv().getOrDefault("GLUE_REGISTRY_NAME", "test-schema-registry");
+    private static final String REGISTRY_NAME = System.getenv().getOrDefault("GLUE_REGISTRY_NAME", "glue-schema-registry-ansumanroy-6219");
     private static final Region AWS_REGION = Region.of(System.getenv().getOrDefault("AWS_REGION", "us-east-1"));
     private static final String SCHEMA_NAME = "SalesforceAudit";
     
@@ -42,7 +42,7 @@ public class SalesforceAuditSerializationTest {
         assertDoesNotThrow(() -> {
             var schemaResponse = client.getSchema(SCHEMA_NAME);
             assertNotNull(schemaResponse);
-            assertNotNull(schemaResponse.schemaDefinition());
+            assertNotNull(schemaResponse.latestSchemaVersion());
             assertEquals("AVRO", schemaResponse.dataFormat().toString());
         }, "Schema should exist in the registry");
     }

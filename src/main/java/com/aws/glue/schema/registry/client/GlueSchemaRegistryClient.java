@@ -84,16 +84,18 @@ public class GlueSchemaRegistryClient {
      * Gets a specific version of a schema.
      * 
      * @param schemaName Name of the schema
-     * @param versionId Version ID of the schema
+     * @param versionNumber Version number of the schema
      * @return Schema version information
      */
-    public GetSchemaVersionResponse getSchemaVersion(String schemaName, String versionId) {
+    public GetSchemaVersionResponse getSchemaVersion(String schemaName, Long versionNumber) {
         GetSchemaVersionRequest request = GetSchemaVersionRequest.builder()
                 .schemaId(SchemaId.builder()
                         .registryName(registryName)
                         .schemaName(schemaName)
                         .build())
-                .schemaVersionId(versionId)
+                .schemaVersionNumber(SchemaVersionNumber.builder()
+                        .versionNumber(versionNumber)
+                        .build())
                 .build();
         
         return glueClient.getSchemaVersion(request);

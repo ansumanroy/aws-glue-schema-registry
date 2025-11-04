@@ -32,7 +32,10 @@ public class AvroSerializer {
         try {
             // Get schema definition from Glue Schema Registry
             var schemaResponse = client.getSchema(schemaName);
-            String schemaDefinition = schemaResponse.schemaDefinition();
+            // Get the latest schema version to get the schema definition
+            Long latestVersion = schemaResponse.latestSchemaVersion();
+            var schemaVersionResponse = client.getSchemaVersion(schemaName, latestVersion);
+            String schemaDefinition = schemaVersionResponse.schemaDefinition();
             
             // Parse Avro schema
             Schema.Parser parser = new Schema.Parser();
@@ -73,7 +76,10 @@ public class AvroSerializer {
         try {
             // Get schema definition from Glue Schema Registry
             var schemaResponse = client.getSchema(schemaName);
-            String schemaDefinition = schemaResponse.schemaDefinition();
+            // Get the latest schema version to get the schema definition
+            Long latestVersion = schemaResponse.latestSchemaVersion();
+            var schemaVersionResponse = client.getSchemaVersion(schemaName, latestVersion);
+            String schemaDefinition = schemaVersionResponse.schemaDefinition();
             
             // Parse Avro schema
             Schema.Parser parser = new Schema.Parser();

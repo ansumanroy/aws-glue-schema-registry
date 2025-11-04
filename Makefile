@@ -1,10 +1,10 @@
-.PHONY: help build test clean java-test java-build java-clean terraform-init terraform-plan terraform-apply terraform-destroy terraform-validate terraform-fmt terraform-output deploy check-aws check-terraform check-gradle
+.PHONY: help build test clean java-test java-build java-clean java-build-maven java-build-gradle java-test-maven java-test-gradle java-clean-maven java-clean-gradle java-jar java-jar-maven java-jar-gradle java-avro terraform-init terraform-plan terraform-apply terraform-destroy terraform-validate terraform-fmt terraform-output deploy check-aws check-terraform check-gradle setup info
 
 # Default target
 .DEFAULT_GOAL := help
 
 # Variables
-JAVA_DIR := java
+JAVA_DIR := .
 TERRAFORM_DIR := terraform
 AWS_REGION ?= us-east-1
 TF_VAR_REGISTRY_NAME ?= $(shell echo "glue-schema-registry-$$(whoami)-$$(date +%s | tail -c 5)" | tr '[:upper:]' '[:lower:]')
@@ -25,24 +25,49 @@ help: ## Display this help message
 	@echo "$(COLOR_BOLD)Available targets:$(COLOR_RESET)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(COLOR_GREEN)%-20s$(COLOR_RESET) %s\n", $$1, $$2}'
 
-##@ Java/Gradle Build
+##@ Java Build
 
-java-build: check-gradle ## Build Java project using Gradle
-	@echo "$(COLOR_BLUE)Building Java project...$(COLOR_RESET)"
+java-build-maven: ## Build Java project using Maven
+	@echo "$(COLOR_BLUE)Building Java project with Maven...$(COLOR_RESET)"
+	cd $(JAVA_DIR) && mvn clean compile
+
+java-build-gradle: check-gradle ## Build Java project using Gradle
+	@echo "$(COLOR_BLUE)Building Java project with Gradle...$(COLOR_RESET)"
 	cd $(JAVA_DIR) && ./gradlew build --no-daemon
 
-java-test: check-gradle ## Run Java tests
-	@echo "$(COLOR_BLUE)Running Java tests...$(COLOR_RESET)"
+java-build: java-build-maven ## Build Java project (default: Maven)
+
+java-test-maven: ## Run Java tests using Maven
+	@echo "$(COLOR_BLUE)Running Java tests with Maven...$(COLOR_RESET)"
+	cd $(JAVA_DIR) && mvn test
+
+java-test-gradle: check-gradle ## Run Java tests using Gradle
+	@echo "$(COLOR_BLUE)Running Java tests with Gradle...$(COLOR_RESET)"
 	cd $(JAVA_DIR) && ./gradlew test --no-daemon
 
-java-clean: check-gradle ## Clean Java build artifacts
-	@echo "$(COLOR_BLUE)Cleaning Java build...$(COLOR_RESET)"
+java-test: java-test-maven ## Run Java tests (default: Maven)
+
+java-clean-maven: ## Clean Java build artifacts using Maven
+	@echo "$(COLOR_BLUE)Cleaning Java build with Maven...$(COLOR_RESET)"
+	cd $(JAVA_DIR) && mvn clean
+
+java-clean-gradle: check-gradle ## Clean Java build artifacts using Gradle
+	@echo "$(COLOR_BLUE)Cleaning Java build with Gradle...$(COLOR_RESET)"
 	cd $(JAVA_DIR) && ./gradlew clean --no-daemon
 
-java-jar: java-build ## Build Java JAR file
-	@echo "$(COLOR_BLUE)Building JAR...$(COLOR_RESET)"
+java-clean: java-clean-maven ## Clean Java build artifacts (default: Maven)
+
+java-jar-maven: java-build-maven ## Build Java JAR file using Maven
+	@echo "$(COLOR_BLUE)Building JAR with Maven...$(COLOR_RESET)"
+	cd $(JAVA_DIR) && mvn package -DskipTests
+	@echo "$(COLOR_GREEN)JAR created: $(JAVA_DIR)/target/schema-registry-client-1.0.0-SNAPSHOT.jar$(COLOR_RESET)"
+
+java-jar-gradle: java-build-gradle ## Build Java JAR file using Gradle
+	@echo "$(COLOR_BLUE)Building JAR with Gradle...$(COLOR_RESET)"
 	cd $(JAVA_DIR) && ./gradlew jar --no-daemon
 	@echo "$(COLOR_GREEN)JAR created: $(JAVA_DIR)/build/libs/schema-registry-client-1.0.0-SNAPSHOT.jar$(COLOR_RESET)"
+
+java-jar: java-jar-maven ## Build Java JAR file (default: Maven)
 
 java-avro: check-gradle ## Generate Avro classes from schema
 	@echo "$(COLOR_BLUE)Generating Avro classes...$(COLOR_RESET)"
@@ -132,13 +157,19 @@ all: java-build terraform-validate ## Build and validate everything
 ##@ Prerequisites
 
 check-gradle: ## Check if Gradle is available
-	@command -v gradle >/dev/null 2>&1 || { \
-		echo "$(COLOR_YELLOW)Gradle not found. Checking for Gradle wrapper...$(COLOR_RESET)"; \
-		if [ ! -f "$(JAVA_DIR)/gradlew" ]; then \
-			echo "$(COLOR_YELLOW)Gradle wrapper not found. Installing...$(COLOR_RESET)"; \
+	@if [ ! -f "$(JAVA_DIR)/gradlew" ]; then \
+		echo "$(COLOR_YELLOW)Gradle wrapper not found. Checking for Gradle installation...$(COLOR_RESET)"; \
+		command -v gradle >/dev/null 2>&1 || { \
+			echo "$(COLOR_YELLOW)Gradle not found. Installing wrapper...$(COLOR_RESET)"; \
+			cd $(JAVA_DIR) && gradle wrapper --gradle-version 8.5 2>/dev/null || { \
+				echo "$(COLOR_YELLOW)Warning: Could not create Gradle wrapper. Install Gradle or use Maven instead.$(COLOR_RESET)"; \
+				exit 1; \
+			}; \
+		}; \
+		if command -v gradle >/dev/null 2>&1; then \
 			cd $(JAVA_DIR) && gradle wrapper --gradle-version 8.5; \
 		fi; \
-	}
+	fi
 
 check-terraform: ## Check if Terraform is installed
 	@command -v terraform >/dev/null 2>&1 || { \
@@ -161,9 +192,9 @@ check-aws: ## Check if AWS CLI is configured
 
 ##@ Utilities
 
-setup: check-gradle ## Initial project setup
+setup: ## Initial project setup
 	@echo "$(COLOR_BLUE)Setting up project...$(COLOR_RESET)"
-	@if [ ! -f "$(JAVA_DIR)/gradlew" ]; then \
+	@if [ ! -f "$(JAVA_DIR)/gradlew" ] && command -v gradle >/dev/null 2>&1; then \
 		echo "Creating Gradle wrapper..."; \
 		cd $(JAVA_DIR) && gradle wrapper --gradle-version 8.5; \
 	fi
