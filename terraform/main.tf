@@ -43,7 +43,7 @@ resource "aws_glue_schema" "salesforce_audit" {
   schema_name              = "SalesforceAudit"
   description       = "Schema for Salesforce audit events with Event ID, Event Name, Timestamp, and Event Details"
   data_format       = "AVRO"
-  schema_definition = file("${path.module}/../java/src/main/resources/salesforce-audit.avsc")
+  schema_definition = file("${path.module}/../src/main/resources/salesforce-audit.avsc")
 
   compatibility = var.salesforce_audit_compatibility
 
