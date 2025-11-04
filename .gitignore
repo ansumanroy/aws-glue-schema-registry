@@ -26,6 +26,51 @@ replay_pid*
 # Makefile environment
 .makefile.env
 
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+build/
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+!gradlew
+!gradlew.bat
+gradle-wrapper.jar.sha256
+.gradletasknamecache
+
+# Generated sources
+generated/
+generated-sources/
+generated-test-sources/
+**/generated/
+**/generated-sources/
+**/generated-test-sources/
+
+# Avro generated classes
+**/avro/**/*.java
+!**/avro/**/README.md
+
+# Test reports
+*.test
+test-results/
+test-output/
+surefire-reports/
+surefire-test-results/
+test-results.xml
+build/reports/
+build/test-results/
+
 # Terraform
 *.tfstate
 *.tfstate.*
@@ -36,6 +81,12 @@ terraform.tfvars
 .terraform.tfstate.lock.info
 crash.log
 crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
 
 # IDE
 .idea/
@@ -46,7 +97,62 @@ crash.*.log
 .settings/
 .classpath
 .project
+*.swp
+*.swo
+*~
+.nbattrs
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.loadpath
+.recommenders
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# VS Code
+.history/
+*.code-workspace
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage reports
+.nyc_output/
+coverage/
+*.lcov
+.jacoco/
+htmlcov/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
