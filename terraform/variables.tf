@@ -1,3 +1,9 @@
+variable "create_registry" {
+  description = "Whether to create the Glue Schema Registry and schemas"
+  type        = bool
+  default     = true
+}
+
 variable "aws_region" {
   description = "AWS region for Glue Schema Registry"
   type        = string

@@ -20,6 +20,8 @@ This directory contains Terraform configuration to deploy and manage schemas in 
 2. **Customize `terraform.tfvars`** with your registry configuration:
 
 ```hcl
+create_registry = true  # Set to false to disable registry creation
+
 aws_region         = "us-east-1"
 registry_name      = "my-schema-registry"
 registry_description = "My application schemas"
@@ -91,6 +93,19 @@ make terraform-apply
 # Or manually
 terraform apply
 ```
+
+### Conditional Creation
+
+You can disable registry creation by setting `create_registry = false` in `terraform.tfvars`:
+
+```hcl
+create_registry = false  # Disables registry and schema creation
+```
+
+When disabled, all outputs will return `null` or empty values. This is useful for:
+- Testing Terraform configuration without creating resources
+- Temporarily disabling resource creation
+- Managing schemas manually outside of Terraform
 
 ## Module Usage
 

@@ -27,7 +27,9 @@ provider "aws" {
 # This module creates the registry and automatically discovers schemas from
 # the schemas/ directory structure. See modules/schema-registry/README.md
 # for detailed module documentation.
+# Module creation is controlled by the create_registry variable.
 module "glue_schema_registry" {
+  count  = var.create_registry ? 1 : 0
   source = "./modules/schema-registry"
 
   registry_name         = var.registry_name
