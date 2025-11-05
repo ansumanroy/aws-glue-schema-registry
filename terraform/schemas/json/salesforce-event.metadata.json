@@ -1,0 +1,10 @@
+{
+  "description": "Salesforce Event schema for JSON format",
+  "compatibility": "BACKWARD",
+  "tags": {
+    "Environment": "dev",
+    "Project": "salesforce-audit",
+    "Format": "JSON"
+  }
+}
+

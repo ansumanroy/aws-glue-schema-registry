@@ -34,7 +34,19 @@ variable "tags" {
 }
 
 variable "salesforce_audit_compatibility" {
-  description = "Compatibility mode for SalesforceAudit schema"
+  description = "Compatibility mode for SalesforceAudit schema (deprecated - use metadata files)"
+  type        = string
+  default     = "BACKWARD"
+}
+
+variable "schemas_base_path" {
+  description = "Base path for schema files directory"
+  type        = string
+  default     = "schemas"
+}
+
+variable "default_compatibility" {
+  description = "Default compatibility mode for schemas without metadata files"
   type        = string
   default     = "BACKWARD"
 }

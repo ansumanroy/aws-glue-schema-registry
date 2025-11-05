@@ -1,0 +1,9 @@
+{
+  "description": "Salesforce audit event schema with Event ID, Event Name, Timestamp, and Event Details",
+  "compatibility": "BACKWARD",
+  "tags": {
+    "Source": "File-based",
+    "Schema": "SalesforceAudit"
+  }
+}
+

@@ -5,32 +5,36 @@ aws_region         = "us-east-1"
 registry_name      = "example-schema-registry"
 registry_description = "Example Glue Schema Registry"
 
-# Compatibility mode for SalesforceAudit schema (BACKWARD, FORWARD, FULL, etc.)
-salesforce_audit_compatibility = "BACKWARD"
+# Default compatibility mode for schemas without metadata files
+default_compatibility = "BACKWARD"
 
-# Optional: Additional schemas can be defined here
-schemas = {
-  "example-schema" = {
-    description       = "Example schema"
-    data_format       = "AVRO"
-    schema_definition = <<-EOT
-      {
-        "type": "record",
-        "name": "Example",
-        "namespace": "com.example",
-        "fields": [
-          {"name": "id", "type": "string"},
-          {"name": "name", "type": "string"}
-        ]
-      }
-    EOT
-    compatibility     = "BACKWARD"
-    tags = {
-      Environment = "dev"
-      Project     = "example"
-    }
-  }
-}
+# Base path for schema files (default: "schemas")
+# schemas_base_path = "schemas"
+
+# Optional: Additional schemas can be defined here manually
+# (file-based schemas in schemas/ directory are automatically discovered)
+# schemas = {
+#   "manual-schema" = {
+#     description       = "Manually defined schema"
+#     data_format       = "AVRO"
+#     schema_definition = <<-EOT
+#       {
+#         "type": "record",
+#         "name": "Example",
+#         "namespace": "com.example",
+#         "fields": [
+#           {"name": "id", "type": "string"},
+#           {"name": "name", "type": "string"}
+#         ]
+#       }
+#     EOT
+#     compatibility     = "BACKWARD"
+#     tags = {
+#       Environment = "dev"
+#       Project     = "example"
+#     }
+#   }
+# }
 
 tags = {
   ManagedBy = "Terraform"

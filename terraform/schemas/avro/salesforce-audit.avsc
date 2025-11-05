@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "SalesforceAudit",
+  "namespace": "com.aws.glue.schema.registry",
+  "doc": "Schema for Salesforce audit events",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Unique identifier for the audit event"
+    },
+    {
+      "name": "eventName",
+      "type": "string",
+      "doc": "Name of the audit event"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Timestamp of the event in milliseconds since epoch"
+    },
+    {
+      "name": "eventDetails",
+      "type": "string",
+      "doc": "Detailed information about the audit event"
+    }
+  ]
+}

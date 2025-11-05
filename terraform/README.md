@@ -11,13 +11,32 @@ This directory contains Terraform configuration to deploy and manage schemas in 
 
 ## Usage
 
-1. Customize `terraform.tfvars` with your configuration:
+### Quick Start - File-Based Schema Management (Recommended)
+
+1. **Add Schema Files**: Place your schema files in the appropriate directories:
+   - `schemas/avro/*.avsc` for Avro schemas
+   - `schemas/json/*.json` for JSON schemas
+
+2. **Customize `terraform.tfvars`** with your registry configuration:
 
 ```hcl
 aws_region         = "us-east-1"
 registry_name      = "my-schema-registry"
 registry_description = "My application schemas"
+default_compatibility = "BACKWARD"
+```
 
+3. **Optional**: Add metadata files for custom descriptions, compatibility, or tags:
+   - `schemas/avro/my-schema.metadata.json`
+   - `schemas/json/my-schema.metadata.json`
+
+See `schemas/README.md` for detailed instructions on adding schemas.
+
+### Manual Schema Definition (Advanced)
+
+You can still define schemas manually in `terraform.tfvars`:
+
+```hcl
 schemas = {
   "user-schema" = {
     description       = "User schema definition"
@@ -27,6 +46,8 @@ schemas = {
   }
 }
 ```
+
+Note: File-based schemas are automatically discovered, and manually defined schemas take precedence if there's a name conflict.
 
 2. Initialize Terraform (with S3 backend):
 
@@ -101,14 +122,42 @@ For team environments, consider adding DynamoDB state locking:
    }
    ```
 
-## SalesforceAudit Schema
+## Schema Management
 
-The Terraform configuration automatically creates a `SalesforceAudit` schema in the registry. This schema is read from the Java resources file at `../java/src/main/resources/salesforce-audit.avsc`.
+### File-Based Schema Discovery
 
-The SalesforceAudit schema includes:
-- **Event ID** (string) - Unique identifier for the audit event
-- **Event Name** (string) - Name of the audit event
-- **Timestamp** (long) - Timestamp in milliseconds since epoch
-- **Event Details** (string) - Detailed information about the audit event
+The Terraform configuration automatically discovers schema files from:
+- `schemas/avro/*.avsc` - Avro schema files
+- `schemas/json/*.json` - JSON Schema files
 
-You can configure the compatibility mode using the `salesforce_audit_compatibility` variable in your `terraform.tfvars` file.
+Schema names are derived from filenames (without extension). For example:
+- `schemas/avro/salesforce-audit.avsc` → schema name: `salesforce-audit`
+- `schemas/json/salesforce-event.json` → schema name: `salesforce-event`
+
+### Metadata Files (Optional)
+
+You can create optional metadata files alongside schema files to customize:
+- Description
+- Compatibility mode
+- Tags
+
+Example: `schemas/avro/my-schema.metadata.json`
+```json
+{
+  "description": "Custom description",
+  "compatibility": "FORWARD",
+  "tags": {
+    "Environment": "production",
+    "Team": "data-engineering"
+  }
+}
+```
+
+### Defaults
+
+If no metadata file exists, defaults are used:
+- **Description**: Auto-generated from schema name
+- **Compatibility**: Value from `default_compatibility` variable (default: `BACKWARD`)
+- **Tags**: Global tags from `terraform.tfvars`
+
+See `schemas/README.md` for detailed documentation on adding and managing schemas.
