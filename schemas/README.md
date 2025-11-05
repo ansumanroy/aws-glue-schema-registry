@@ -2,6 +2,8 @@
 
 This directory contains schema files that will be automatically discovered and registered in AWS Glue Schema Registry.
 
+**Location**: This directory is located at the project root level (outside the `terraform/` directory) to separate configuration data from infrastructure code, following Terraform best practices.
+
 ## Structure
 
 ```

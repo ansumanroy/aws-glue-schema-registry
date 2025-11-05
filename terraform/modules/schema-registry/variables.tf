@@ -1,9 +1,3 @@
-variable "aws_region" {
-  description = "AWS region for Glue Schema Registry"
-  type        = string
-  default     = "us-east-1"
-}
-
 variable "registry_name" {
   description = "Name of the Glue Schema Registry"
   type        = string
@@ -16,9 +10,8 @@ variable "registry_description" {
 }
 
 variable "schemas_base_path" {
-  description = "Base path for schema files directory (absolute path or relative to terraform directory)"
+  description = "Base path for schema files directory (relative to module or absolute path)"
   type        = string
-  default     = "../schemas"
 }
 
 variable "default_compatibility" {
@@ -45,9 +38,3 @@ variable "tags" {
   default     = {}
 }
 
-# Deprecated: kept for backward compatibility
-variable "salesforce_audit_compatibility" {
-  description = "Compatibility mode for SalesforceAudit schema (deprecated - use metadata files or default_compatibility)"
-  type        = string
-  default     = "BACKWARD"
-}

@@ -1,3 +1,13 @@
+# ============================================================================
+# Glue Schema Registry - Root Configuration
+# ============================================================================
+# This configuration uses the reusable schema-registry module located in
+# modules/schema-registry/ to create and manage AWS Glue Schema Registry.
+#
+# The module automatically discovers schemas from the schemas/ directory
+# and supports both file-based and manual schema definitions.
+# ============================================================================
+
 terraform {
   required_version = ">= 1.0"
 
@@ -5,7 +15,6 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = ">= 5.0"
-
     }
   }
 }
@@ -14,86 +23,17 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Glue Schema Registry
-resource "aws_glue_registry" "schema_registry" {
-  registry_name = var.registry_name
-  description   = var.registry_description
-  tags          = var.tags
-}
+# Glue Schema Registry Module
+# This module creates the registry and automatically discovers schemas from
+# the schemas/ directory structure. See modules/schema-registry/README.md
+# for detailed module documentation.
+module "glue_schema_registry" {
+  source = "./modules/schema-registry"
 
-# Discover schema files from schemas directory
-locals {
-  # Discover Avro schema files (returns empty set if directory doesn't exist)
-  avro_schema_files = try(fileset("${path.module}/${var.schemas_base_path}/avro", "*.avsc"), toset([]))
-
-  # Discover JSON schema files (returns empty set if directory doesn't exist)
-  # Exclude metadata.json files from discovery
-  json_schema_files = try([for f in fileset("${path.module}/${var.schemas_base_path}/json", "*.json") : f if !endswith(f, ".metadata.json")], toset([]))
-
-  # Create a map of Avro schemas: filename (without extension) -> full path
-  avro_schemas = {
-    for file in local.avro_schema_files :
-    replace(basename(file), ".avsc", "") => {
-      file_path     = "${path.module}/${var.schemas_base_path}/avro/${file}"
-      data_format   = "AVRO"
-      metadata_file = "${path.module}/${var.schemas_base_path}/avro/${replace(basename(file), ".avsc", "")}.metadata.json"
-    }
-  }
-
-  # Create a map of JSON schemas: filename (without extension) -> full path
-  json_schemas = {
-    for file in local.json_schema_files :
-    replace(basename(file), ".json", "") => {
-      file_path     = "${path.module}/${var.schemas_base_path}/json/${file}"
-      data_format   = "JSON"
-      metadata_file = "${path.module}/${var.schemas_base_path}/json/${replace(basename(file), ".json", "")}.metadata.json"
-    }
-  }
-
-  # Merge both schema types
-  file_based_schemas = merge(local.avro_schemas, local.json_schemas)
-
-  # Helper function to read metadata file if it exists, otherwise return null
-  read_metadata = {
-    for name, schema in local.file_based_schemas :
-    name => fileexists(schema.metadata_file) ? jsondecode(file(schema.metadata_file)) : null
-  }
-
-  # Build final schema configuration with metadata or defaults
-  schemas_from_files = {
-    for name, schema in local.file_based_schemas :
-    name => {
-      schema_definition = file(schema.file_path)
-      data_format       = schema.data_format
-      description = try(
-        local.read_metadata[name].description,
-        "${replace(name, "-", " ")} schema" # Auto-generate from name: "salesforce-audit" -> "salesforce audit schema"
-      )
-      compatibility = try(
-        local.read_metadata[name].compatibility,
-        var.default_compatibility
-      )
-      tags = try(
-        merge(var.tags, local.read_metadata[name].tags),
-        var.tags
-      )
-    }
-  }
-
-  # Merge file-based schemas with manually defined schemas (var.schemas takes precedence)
-  all_schemas = merge(local.schemas_from_files, var.schemas)
-}
-
-# Glue Schemas from file-based discovery and var.schemas
-resource "aws_glue_schema" "file_based_schemas" {
-  for_each = local.all_schemas
-
-  registry_arn      = aws_glue_registry.schema_registry.arn
-  schema_name       = each.key
-  description       = each.value.description
-  data_format       = each.value.data_format
-  schema_definition = each.value.schema_definition
-
-  compatibility = lookup(each.value, "compatibility", var.default_compatibility)
-  tags          = merge(var.tags, lookup(each.value, "tags", {}))
+  registry_name         = var.registry_name
+  registry_description  = var.registry_description
+  schemas_base_path     = var.schemas_base_path
+  default_compatibility = var.default_compatibility
+  schemas               = var.schemas
+  tags                  = var.tags
 }

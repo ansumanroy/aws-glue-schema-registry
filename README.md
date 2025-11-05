@@ -65,16 +65,27 @@ make build
 
 ```
 aws-glue-schema-registry/
-├── java/                    # Java client wrapper
-│   ├── src/
-│   │   ├── main/java/       # Source code
-│   │   └── test/java/       # Tests
-│   ├── build.gradle         # Gradle build file
-│   └── pom.xml              # Maven build file (alternative)
+├── src/                     # Java source code
+│   ├── main/java/           # Source code
+│   ├── main/resources/       # Resources (schema files for build)
+│   └── test/java/          # Tests
+├── schemas/                 # Schema files for Terraform (at project root)
+│   ├── avro/               # Avro schema files (.avsc)
+│   ├── json/               # JSON Schema files (.json)
+│   └── README.md           # Schema management guide
 ├── terraform/               # Terraform IAC
-│   ├── main.tf             # Main Terraform configuration
-│   ├── variables.tf        # Variable definitions
-│   └── outputs.tf          # Output definitions
+│   ├── main.tf             # Root configuration (calls module)
+│   ├── variables.tf        # Root variable definitions
+│   ├── outputs.tf          # Root output definitions
+│   ├── modules/
+│   │   └── schema-registry/  # Reusable Terraform module
+│   │       ├── main.tf      # Module resource definitions
+│   │       ├── variables.tf # Module variables
+│   │       ├── outputs.tf   # Module outputs
+│   │       └── README.md    # Module documentation
+│   └── terraform.tfvars    # Configuration file
+├── build.gradle            # Gradle build file
+├── pom.xml                 # Maven build file
 ├── Makefile                # Build and deployment wrapper
 └── README.md              # This file
 ```

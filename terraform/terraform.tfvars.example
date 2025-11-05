@@ -8,8 +8,8 @@ registry_description = "Example Glue Schema Registry"
 # Default compatibility mode for schemas without metadata files
 default_compatibility = "BACKWARD"
 
-# Base path for schema files (default: "schemas")
-# schemas_base_path = "schemas"
+# Base path for schema files (default: "../schemas" - points to root schemas/ directory)
+# schemas_base_path = "../schemas"
 
 # Optional: Additional schemas can be defined here manually
 # (file-based schemas in schemas/ directory are automatically discovered)

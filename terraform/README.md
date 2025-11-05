@@ -1,6 +1,6 @@
 # Terraform Infrastructure as Code for Glue Schema Registry
 
-This directory contains Terraform configuration to deploy and manage schemas in AWS Glue Schema Registry.
+This directory contains Terraform configuration to deploy and manage schemas in AWS Glue Schema Registry using a reusable module.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ This directory contains Terraform configuration to deploy and manage schemas in 
 
 ### Quick Start - File-Based Schema Management (Recommended)
 
-1. **Add Schema Files**: Place your schema files in the appropriate directories:
+1. **Add Schema Files**: Place your schema files in the appropriate directories at the project root:
    - `schemas/avro/*.avsc` for Avro schemas
    - `schemas/json/*.json` for JSON schemas
 
@@ -27,8 +27,8 @@ default_compatibility = "BACKWARD"
 ```
 
 3. **Optional**: Add metadata files for custom descriptions, compatibility, or tags:
-   - `schemas/avro/my-schema.metadata.json`
-   - `schemas/json/my-schema.metadata.json`
+   - `schemas/avro/my-schema.metadata.json` (at project root)
+   - `schemas/json/my-schema.metadata.json` (at project root)
 
 See `schemas/README.md` for detailed instructions on adding schemas.
 
@@ -49,9 +49,9 @@ schemas = {
 
 Note: File-based schemas are automatically discovered, and manually defined schemas take precedence if there's a name conflict.
 
-2. Initialize Terraform (with S3 backend):
+2. **Initialize Terraform** (with S3 backend):
 
-The configuration uses an S3 backend for storing Terraform state. The backend is configured in `main.tf`:
+The configuration uses an S3 backend for storing Terraform state. The backend is configured in `backend.tf`:
 
 ```hcl
 backend "s3" {
@@ -72,25 +72,77 @@ make terraform-init
 terraform init
 ```
 
-3. Review the plan:
+3. **Review the plan**:
 
 ```bash
+# Using Makefile (recommended)
+make terraform-plan
+
+# Or manually
 terraform plan
 ```
 
-4. Apply the configuration:
+4. **Apply the configuration**:
 
 ```bash
+# Using Makefile (recommended)
+make terraform-apply
+
+# Or manually
 terraform apply
 ```
 
+## Module Usage
+
+This configuration uses the `schema-registry` module located at `modules/schema-registry/`. 
+
+### As a Root Module
+
+The current setup uses the module as a root module (directly in this directory). To use it in another Terraform configuration:
+
+```hcl
+module "glue_schema_registry" {
+  source = "path/to/terraform/modules/schema-registry"
+
+  registry_name        = "my-registry"
+  schemas_base_path    = "${path.module}/schemas"
+  default_compatibility = "BACKWARD"
+}
+```
+
+See `modules/schema-registry/README.md` for complete module documentation.
+
 ## Structure
 
-- `main.tf` - Main Terraform configuration for Glue Schema Registry and schemas (includes S3 backend configuration)
-- `variables.tf` - Input variables
-- `outputs.tf` - Output values
-- `terraform.tfvars.example` - Example variables file
-- `backend.hcl.example` - Example backend configuration (alternative approach)
+```
+terraform/
+├── main.tf                          # Root configuration that calls the module
+├── variables.tf                      # Root input variables
+├── outputs.tf                        # Root output values
+├── terraform.tfvars.example         # Example variables file
+├── backend.tf                        # Backend configuration
+├── backend.hcl.example               # Example backend configuration (alternative approach)
+├── modules/
+│   └── schema-registry/              # Reusable Glue Schema Registry module
+│       ├── main.tf                   # Module resource definitions
+│       ├── variables.tf              # Module input variables
+│       ├── outputs.tf                # Module outputs
+│       └── README.md                 # Module documentation
+../schemas/                           # Schema files directory (at project root)
+    ├── avro/                         # Avro schema files (.avsc)
+    ├── json/                         # JSON Schema files (.json)
+    └── README.md                     # Schema management guide
+```
+
+### Module Structure
+
+This configuration uses a reusable Terraform module located in `modules/schema-registry/`. The module:
+- Creates the Glue Schema Registry
+- Automatically discovers schema files from directories
+- Supports file-based and manual schema definitions
+- Provides comprehensive outputs
+
+See `modules/schema-registry/README.md` for detailed module documentation.
 
 ## S3 Backend Configuration
 
@@ -126,13 +178,15 @@ For team environments, consider adding DynamoDB state locking:
 
 ### File-Based Schema Discovery
 
-The Terraform configuration automatically discovers schema files from:
+The Terraform configuration automatically discovers schema files from the `schemas/` directory at the project root:
 - `schemas/avro/*.avsc` - Avro schema files
 - `schemas/json/*.json` - JSON Schema files
 
 Schema names are derived from filenames (without extension). For example:
 - `schemas/avro/salesforce-audit.avsc` → schema name: `salesforce-audit`
 - `schemas/json/salesforce-event.json` → schema name: `salesforce-event`
+
+**Note**: The schemas directory is located at the project root level (outside the `terraform/` directory) to separate configuration data from infrastructure code.
 
 ### Metadata Files (Optional)
 
