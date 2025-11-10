@@ -45,12 +45,6 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Build all projects
-        run: make build
-        env:
-          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-
       - name: Debug - Verify secrets availability
         run: |
           echo "🔍 Checking GitHub Secrets Availability..."
@@ -114,6 +108,12 @@ jobs:
           GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
           SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
           SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Build all projects
+        run: make build
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
 
       - name: Test all projects
         run: make test

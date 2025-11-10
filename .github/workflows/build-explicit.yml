@@ -1,23 +1,26 @@
 # GitHub Actions Workflow for AWS Glue Schema Registry
 # Uses explicit build steps (no Makefile)
 # This showcases explicit commands in CI/CD pipelines
+#
+# DISABLED: Temporarily disabled - using build-simple.yml instead
+# To re-enable: Uncomment the 'on:' section below
 
 name: Build and Test (Explicit Steps)
 
-on:
-  push:
-    branches:
-      - main
-      - develop
-      - 'feature/**'
-    paths-ignore:
-      - '*.md'
-      - '.gitignore'
-      - 'README.md'
-  pull_request:
-    branches:
-      - main
-      - develop
+# on:
+#   push:
+#     branches:
+#       - main
+#       - develop
+#       - 'feature/**'
+#     paths-ignore:
+#       - '*.md'
+#       - '.gitignore'
+#       - 'README.md'
+#   pull_request:
+#     branches:
+#       - main
+#       - develop
 
 env:
   JAVA_VERSION: '17'
@@ -42,11 +45,6 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x java/gradlew
-
-      - name: Build with Gradle
-        run: |
-          cd java
-          ./gradlew clean build --no-daemon
 
       - name: Debug - Verify secrets availability
         run: |
@@ -111,6 +109,11 @@ jobs:
           GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
           SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
           SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Build with Gradle
+        run: |
+          cd java
+          ./gradlew clean build --no-daemon
 
       - name: Test with Gradle
         run: |
