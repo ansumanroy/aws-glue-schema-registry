@@ -273,6 +273,9 @@ build: java-build python-build golang-build ## Build all projects
 test: java-test python-test golang-test ## Run all tests
 
 clean: java-clean python-clean golang-clean ## Clean all build artifacts
+	@echo "$(COLOR_BLUE)Cleaning release artifacts...$(COLOR_RESET)"
+	@rm -rf release-artifacts/
+	@echo "$(COLOR_GREEN)✓ All artifacts cleaned$(COLOR_RESET)"
 
 ##@ Prerequisites
 
