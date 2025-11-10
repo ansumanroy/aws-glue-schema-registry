@@ -45,9 +45,9 @@ export ANYPOINT_ENV_ID=your-env-id          # Optional
 
 ## Publishing Methods
 
-### Method 1: Using Makefile (Recommended)
+### Method 1: Using Makefile (Linux/macOS - Recommended)
 
-The easiest way to publish is using the Makefile target:
+The easiest way to publish on Linux/macOS is using the Makefile target:
 
 ```bash
 # Publish version 1.0.0
@@ -59,7 +59,7 @@ export ANYPOINT_PASSWORD=your-password
 make java-publish-exchange VERSION=1.0.0
 ```
 
-### Method 2: Using the Script Directly
+### Method 2: Using Bash Script (Linux/macOS)
 
 ```bash
 # Basic usage
@@ -73,6 +73,37 @@ make java-publish-exchange VERSION=1.0.0
 
 # Dry run (test without actually publishing)
 ./scripts/publish-mulesoft-exchange.sh --version 1.0.0 --dry-run
+```
+
+### Method 3: Using PowerShell Script (Windows - Recommended)
+
+For Windows users who don't have Make installed, use the PowerShell script:
+
+```powershell
+# Basic usage
+.\scripts\publish-mulesoft-exchange.ps1 -Version 1.0.0
+
+# Set environment variables
+$env:ANYPOINT_USERNAME = "your-username"
+$env:ANYPOINT_PASSWORD = "your-password"
+$env:ANYPOINT_ORG_ID = "your-org-id"
+
+# Publish version 1.0.0
+.\scripts\publish-mulesoft-exchange.ps1 -Version 1.0.0
+
+# Using Gradle instead of Maven
+.\scripts\publish-mulesoft-exchange.ps1 -Version 1.0.0 -BuildSystem gradle
+
+# Skip tests (faster, but not recommended)
+.\scripts\publish-mulesoft-exchange.ps1 -Version 1.0.0 -SkipTests
+
+# Dry run (test without actually publishing)
+.\scripts\publish-mulesoft-exchange.ps1 -Version 1.0.0 -DryRun
+```
+
+**Note**: If you get an execution policy error, run:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ### Method 3: Using Anypoint CLI Directly
@@ -120,6 +151,8 @@ mvn anypoint-exchange:deploy \
 
 ## Script Options
 
+### Bash Script (Linux/macOS)
+
 The `publish-mulesoft-exchange.sh` script supports the following options:
 
 | Option | Description | Default |
@@ -130,6 +163,19 @@ The `publish-mulesoft-exchange.sh` script supports the following options:
 | `-t, --skip-tests` | Skip running tests before building | false |
 | `-d, --dry-run` | Perform a dry run without publishing | false |
 | `-h, --help` | Show help message | - |
+
+### PowerShell Script (Windows)
+
+The `publish-mulesoft-exchange.ps1` script supports the following options:
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-BuildSystem` | Build system to use (maven\|gradle) | maven |
+| `-Version` | Version to publish (required) | - |
+| `-SkipBuild` | Skip building the project | false |
+| `-SkipTests` | Skip running tests before building | false |
+| `-DryRun` | Perform a dry run without publishing | false |
+| `-Help` | Show help message | - |
 
 ## Version Management
 
@@ -257,7 +303,9 @@ After successful publishing:
 6. **Dry Run**: Use `--dry-run` to test the publishing process
 7. **Changelog**: Maintain a changelog for version history
 
-## Example Workflow
+## Example Workflows
+
+### Linux/macOS Workflow
 
 ```bash
 # 1. Set credentials
@@ -271,6 +319,30 @@ make java-publish-exchange VERSION=1.0.0
 
 # 3. Publish for real
 make java-publish-exchange VERSION=1.0.0
+
+# 4. Verify in Exchange
+# (Check Anypoint Platform Exchange)
+
+# 5. Commit version changes
+git add java/pom.xml java/build.gradle
+git commit -m "Bump version to 1.0.0"
+git tag -a v1.0.0 -m "Release version 1.0.0"
+git push origin main --tags
+```
+
+### Windows Workflow (PowerShell)
+
+```powershell
+# 1. Set credentials
+$env:ANYPOINT_USERNAME = "myuser"
+$env:ANYPOINT_PASSWORD = "mypassword"
+$env:ANYPOINT_ORG_ID = "12345678-1234-1234-1234-123456789012"
+
+# 2. Test with dry run
+.\scripts\publish-mulesoft-exchange.ps1 -Version 1.0.0 -DryRun
+
+# 3. Publish for real
+.\scripts\publish-mulesoft-exchange.ps1 -Version 1.0.0
 
 # 4. Verify in Exchange
 # (Check Anypoint Platform Exchange)

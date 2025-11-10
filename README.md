@@ -259,6 +259,8 @@ This project can be published to MuleSoft Exchange for easy integration into Mul
 
 ### Quick Start
 
+#### Linux/macOS
+
 ```bash
 # Set Anypoint Platform credentials
 export ANYPOINT_USERNAME=your-username
@@ -267,6 +269,23 @@ export ANYPOINT_ORG_ID=your-org-id
 
 # Publish version 1.0.0
 make java-publish-exchange VERSION=1.0.0
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Set Anypoint Platform credentials
+$env:ANYPOINT_USERNAME = "your-username"
+$env:ANYPOINT_PASSWORD = "your-password"
+$env:ANYPOINT_ORG_ID = "your-org-id"
+
+# Publish version 1.0.0
+.\scripts\publish-mulesoft-exchange.ps1 -Version 1.0.0
+```
+
+**Note for Windows**: If you get an execution policy error, run:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 For detailed instructions, see [MULESOFT_EXCHANGE.md](MULESOFT_EXCHANGE.md).
