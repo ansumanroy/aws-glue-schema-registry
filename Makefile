@@ -1,4 +1,4 @@
-.PHONY: help build test clean java-build java-test java-clean java-jar java-build-maven java-test-maven java-clean-maven java-jar-maven python-venv python-build python-test python-clean python-install python-install-dev python-install-package golang-build golang-test golang-clean golang-install check-gradle check-maven check-java check-python check-go setup info
+.PHONY: help build test clean java-build java-test java-clean java-jar java-build-maven java-test-maven java-clean-maven java-jar-maven java-javadoc java-javadoc-gradle java-javadoc-maven python-venv python-build python-test python-clean python-install python-install-dev python-install-package python-docs golang-build golang-test golang-clean golang-install golang-docs check-gradle check-maven check-java check-python check-go setup info docs
 
 # Default target
 .DEFAULT_GOAL := help
@@ -21,6 +21,9 @@ COLOR_BLUE := \033[34m
 help: ## Display this help message
 	@echo "$(COLOR_BOLD)Available targets:$(COLOR_RESET)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(COLOR_GREEN)%-20s$(COLOR_RESET) %s\n", $$1, $$2}'
+
+docs: java-javadoc python-docs golang-docs ## Generate all documentation (Javadoc, pydoc, and godoc)
+	@echo "$(COLOR_GREEN)All documentation generated$(COLOR_RESET)"
 
 ##@ Java Build
 
@@ -71,6 +74,20 @@ java-test: java-test-gradle ## Run Java tests (default: Gradle)
 java-clean: java-clean-gradle ## Clean Java build artifacts (default: Gradle)
 java-jar: java-jar-gradle ## Build Java JAR file (default: Gradle)
 
+java-javadoc-gradle: check-gradle check-java ## Generate Java Javadoc using Gradle
+	@echo "$(COLOR_BLUE)Generating Javadoc with Gradle...$(COLOR_RESET)"
+	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew javadoc --no-daemon
+	@echo "$(COLOR_GREEN)Javadoc generated: $(JAVA_DIR)/build/docs/javadoc/index.html$(COLOR_RESET)"
+
+java-javadoc-maven: check-maven check-java ## Generate Java Javadoc using Maven
+	@echo "$(COLOR_BLUE)Generating Javadoc with Maven...$(COLOR_RESET)"
+	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn javadoc:javadoc
+	@echo "$(COLOR_GREEN)Javadoc generated: $(JAVA_DIR)/target/docs/javadoc/index.html$(COLOR_RESET)"
+
+java-javadoc: java-javadoc-gradle ## Generate Java Javadoc (default: Gradle)
+
 ##@ Python Build
 
 python-venv: check-python ## Create Python virtual environment
@@ -116,6 +133,19 @@ python-install-package: python-build ## Install the built package in virtual env
 		. venv/bin/activate && \
 		pip install --upgrade dist/*.whl || pip install --upgrade dist/*.tar.gz
 
+python-docs: python-install-dev ## Generate Python documentation using pydoc
+	@echo "$(COLOR_BLUE)Generating Python documentation...$(COLOR_RESET)"
+	@mkdir -p $(PYTHON_DIR)/docs/html
+	@cd $(PYTHON_DIR) && \
+		. venv/bin/activate && \
+		python -m pydoc -w glue_schema_registry.client glue_schema_registry.avro_serializer glue_schema_registry.json_serializer glue_schema_registry.model 2>/dev/null || true
+	@cd $(PYTHON_DIR) && \
+	if ls *.html 1> /dev/null 2>&1; then \
+		mv *.html docs/html/ 2>/dev/null || true; \
+	fi
+	@echo "$(COLOR_GREEN)Python documentation generated in $(PYTHON_DIR)/docs/html/$(COLOR_RESET)"
+	@echo "$(COLOR_BLUE)Note: For better documentation, consider using Sphinx. Install with: pip install sphinx$(COLOR_RESET)"
+
 python-clean: ## Clean Python build artifacts and virtual environment
 	@echo "$(COLOR_BLUE)Cleaning Python build artifacts...$(COLOR_RESET)"
 	@cd $(PYTHON_DIR) && rm -rf build/ dist/ *.egg-info/ .pytest_cache/ __pycache__/ .coverage htmlcov/ venv/
@@ -126,15 +156,56 @@ python-clean: ## Clean Python build artifacts and virtual environment
 
 golang-install: check-go ## Install Golang dependencies
 	@echo "$(COLOR_BLUE)Installing Golang dependencies...$(COLOR_RESET)"
-	cd $(GOLANG_DIR) && go mod download
+	cd $(GOLANG_DIR) && go mod tidy && go mod download
 
-golang-build: check-go ## Build Golang project
+golang-build: check-go golang-install ## Build Golang project
 	@echo "$(COLOR_BLUE)Building Golang project...$(COLOR_RESET)"
 	cd $(GOLANG_DIR) && go build ./...
 
-golang-test: check-go ## Run Golang tests
+golang-test: check-go golang-install ## Run Golang tests
 	@echo "$(COLOR_BLUE)Running Golang tests...$(COLOR_RESET)"
 	cd $(GOLANG_DIR) && go test ./... -v
+
+golang-docs: check-go ## Generate Golang documentation using godoc
+	@echo "$(COLOR_BLUE)Generating Golang documentation...$(COLOR_RESET)"
+	@mkdir -p $(GOLANG_DIR)/docs/html
+	@cd $(GOLANG_DIR) && \
+	if command -v godoc >/dev/null 2>&1; then \
+		echo "Using godoc to generate documentation..."; \
+		godoc -http=:6060 -index -notes="BUG|TODO" > /dev/null 2>&1 & \
+		GODOC_PID=$$!; \
+		sleep 3; \
+		mkdir -p docs/html && \
+		curl -s http://localhost:6060/pkg/github.com/aws-glue-schema-registry/golang/ > docs/html/index.html 2>/dev/null || true; \
+		kill $$GODOC_PID 2>/dev/null || true; \
+		sleep 1; \
+	else \
+		echo "Using go doc to generate documentation..."; \
+		mkdir -p docs/html && \
+		{ \
+			echo "<!DOCTYPE html>"; \
+			echo "<html><head>"; \
+			echo "<title>Go Documentation - AWS Glue Schema Registry</title>"; \
+			echo "<style>body{font-family:monospace;padding:20px;background:#f5f5f5;}pre{background:#fff;padding:15px;border:1px solid #ddd;border-radius:4px;}</style>"; \
+			echo "</head><body><h1>Go Documentation</h1><pre>"; \
+			echo "=== Client Package ==="; \
+			go doc -all ./client 2>&1 || echo "No documentation for client package"; \
+			echo ""; \
+			echo "=== Model Package ==="; \
+			go doc -all ./model 2>&1 || echo "No documentation for model package"; \
+			echo ""; \
+			echo "=== Serializer Package ==="; \
+			go doc -all ./serializer 2>&1 || echo "No documentation for serializer package"; \
+			echo "</pre></body></html>"; \
+		} > docs/html/index.html; \
+	fi
+	@if [ -f $(GOLANG_DIR)/docs/html/index.html ]; then \
+		echo "$(COLOR_GREEN)Golang documentation generated in $(GOLANG_DIR)/docs/html/index.html$(COLOR_RESET)"; \
+		echo "$(COLOR_BLUE)View documentation: open $(GOLANG_DIR)/docs/html/index.html$(COLOR_RESET)"; \
+	else \
+		echo "$(COLOR_YELLOW)Warning: Documentation generation may have failed$(COLOR_RESET)"; \
+	fi
+	@echo "$(COLOR_BLUE)Note: For better documentation, install godoc: go install golang.org/x/tools/cmd/godoc@latest$(COLOR_RESET)"
 
 golang-clean: ## Clean Golang build artifacts
 	@echo "$(COLOR_BLUE)Cleaning Golang build artifacts...$(COLOR_RESET)"

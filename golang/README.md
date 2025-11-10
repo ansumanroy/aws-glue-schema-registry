@@ -89,6 +89,48 @@ golang/
 └── README.md
 ```
 
+## Generating Documentation
+
+### Using go doc
+
+Generate API documentation using `go doc`:
+
+```bash
+# From project root
+make golang-docs
+```
+
+Or manually:
+```bash
+cd golang
+go doc -all ./... > docs/go-doc.txt
+```
+
+### Using godoc (Recommended)
+
+For better HTML documentation with `godoc`:
+
+1. Install godoc:
+```bash
+go install golang.org/x/tools/cmd/godoc@latest
+```
+
+2. Generate documentation:
+```bash
+make golang-docs
+```
+
+3. View documentation:
+```bash
+# Start godoc server
+godoc -http=:6060
+
+# Open in browser
+open http://localhost:6060/pkg/github.com/aws-glue-schema-registry/golang/
+```
+
+The documentation will be generated in `docs/html/` directory.
+
 ## Environment Variables
 
 - `GLUE_REGISTRY_NAME`: Name of the Glue Schema Registry (default: "glue-schema-registry-ansumanroy-6219")

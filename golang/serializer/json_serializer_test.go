@@ -1,27 +1,12 @@
 package serializer_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/aws-glue-schema-registry/golang/client"
 	"github.com/aws-glue-schema-registry/golang/model"
 	"github.com/aws-glue-schema-registry/golang/serializer"
 )
-
-func getRegistryName() string {
-	if name := os.Getenv("GLUE_REGISTRY_NAME"); name != "" {
-		return name
-	}
-	return "glue-schema-registry-ansumanroy-6219"
-}
-
-func getAWSRegion() string {
-	if region := os.Getenv("AWS_REGION"); region != "" {
-		return region
-	}
-	return "us-east-1"
-}
 
 func TestJsonSerialization(t *testing.T) {
 	c, err := client.NewGlueSchemaRegistryClient(getAWSRegion(), getRegistryName())

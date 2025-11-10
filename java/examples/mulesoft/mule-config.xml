@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    MuleSoft Configuration Example for Glue Schema Registry
+    
+    This example demonstrates how to configure and use the Glue Schema Registry
+    client in a MuleSoft application.
+    
+    Prerequisites:
+    1. Add the schema-registry-client JAR as a dependency in your MuleSoft project
+    2. Configure AWS credentials in MuleSoft Secure Properties
+    3. Set GLUE_REGISTRY_NAME and AWS_REGION environment variables or properties
+-->
+<mule xmlns:java="http://www.mulesoft.org/schema/mule/java"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core 
+      http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+      http://www.mulesoft.org/schema/mule/java 
+      http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+      http://www.mulesoft.org/schema/mule/ee/core 
+      http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+    <!-- Configuration Properties -->
+    <!-- These can be set in mule-artifact.json or secure properties -->
+    <configuration-properties>
+        <configuration-property key="glue.registry.name" value="${glue.registry.name}"/>
+        <configuration-property key="aws.region" value="${aws.region}"/>
+    </configuration-properties>
+
+    <!-- Example Flow: Serialize SalesforceAudit to Avro -->
+    <flow name="serializeAuditEventFlow">
+        <http:listener doc:name="HTTP Listener" 
+                       config-ref="HTTP_Listener_config" 
+                       path="/audit/serialize"/>
+        
+        <!-- Transform incoming payload to SalesforceAudit object -->
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload>
+                    <![CDATA[%dw 2.0
+                    output application/java
+                    ---
+                    {
+                        eventId: payload.eventId,
+                        eventName: payload.eventName,
+                        timestamp: now() as Number,
+                        eventDetails: payload.eventDetails
+                    }]]>
+                </ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        
+        <!-- Create GlueSchemaRegistryMuleModule instance -->
+        <java:new doc:name="Create Mule Module" 
+                  class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                  constructor="create()"/>
+        
+        <!-- Serialize to Avro using Java module -->
+        <java:invoke doc:name="Serialize Avro" 
+                     class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                     method="serializeAvro(java.lang.String, com.aws.glue.schema.registry.implementation.model.SalesforceAudit)"
+                     instance="#[vars.muleModule]"
+                     arguments="#['SalesforceAudit', payload]"/>
+        
+        <!-- Set response -->
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload value='#["Serialized: " ++ sizeOf(payload) ++ " bytes"]'/>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- Example Flow: Deserialize Avro to SalesforceAudit -->
+    <flow name="deserializeAuditEventFlow">
+        <http:listener doc:name="HTTP Listener" 
+                       config-ref="HTTP_Listener_config" 
+                       path="/audit/deserialize"/>
+        
+        <!-- Create GlueSchemaRegistryMuleModule instance -->
+        <java:new doc:name="Create Mule Module" 
+                  class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                  constructor="create()"/>
+        
+        <!-- Deserialize from Avro -->
+        <java:invoke doc:name="Deserialize Avro" 
+                     class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                     method="deserializeAvro(java.lang.String, byte[])"
+                     instance="#[vars.muleModule]"
+                     arguments="#['SalesforceAudit', payload]"/>
+        
+        <!-- Transform to JSON response -->
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload>
+                    <![CDATA[%dw 2.0
+                    output application/json
+                    ---
+                    {
+                        eventId: payload.eventId,
+                        eventName: payload.eventName,
+                        timestamp: payload.timestamp,
+                        eventDetails: payload.eventDetails
+                    }]]>
+                </ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- Example: Using DataWeave to call Java methods directly -->
+    <flow name="dataweaveExampleFlow">
+        <http:listener doc:name="HTTP Listener" 
+                       config-ref="HTTP_Listener_config" 
+                       path="/audit/dataweave"/>
+        
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload>
+                    <![CDATA[%dw 2.0
+                    import java!com::aws::glue::schema::registry::mule::GlueSchemaRegistryMuleModule
+                    import java!com::aws::glue::schema::registry::implementation::model::SalesforceAudit
+                    output application/json
+                    ---
+                    {
+                        // Create module instance
+                        module: GlueSchemaRegistryMuleModule::create(),
+                        
+                        // Create audit event
+                        auditEvent: {
+                            eventId: "event-123",
+                            eventName: "UserLogin",
+                            timestamp: now() as Number,
+                            eventDetails: "User logged in"
+                        } as Object {class: "com.aws.glue.schema.registry.implementation.model.SalesforceAudit"},
+                        
+                        // Serialize to Avro
+                        serialized: module.serializeAvro("SalesforceAudit", auditEvent)
+                    }]]>
+                </ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+</mule>
+

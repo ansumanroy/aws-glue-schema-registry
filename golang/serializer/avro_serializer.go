@@ -1,7 +1,6 @@
 package serializer
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -43,14 +42,13 @@ func (s *AvroSerializer) Serialize(c *client.GlueSchemaRegistryClient, schemaNam
 	// Create a record
 	record := auditEvent.ToMap()
 
-	// Serialize to bytes
-	var buf bytes.Buffer
-	err = codec.Encode(&buf, record)
+	// Serialize to bytes using BinaryFromNative
+	binary, err := codec.BinaryFromNative(nil, record)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode record: %w", err)
 	}
 
-	return buf.Bytes(), nil
+	return binary, nil
 }
 
 // Deserialize deserializes Avro binary data to a SalesforceAudit object
@@ -75,9 +73,8 @@ func (s *AvroSerializer) Deserialize(c *client.GlueSchemaRegistryClient, schemaN
 		return nil, fmt.Errorf("failed to create Avro codec: %w", err)
 	}
 
-	// Deserialize from bytes
-	buf := bytes.NewReader(data)
-	datum, _, err := codec.NativeFromBinary(buf)
+	// Deserialize from bytes using NativeFromBinary
+	datum, _, err := codec.NativeFromBinary(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode record: %w", err)
 	}
@@ -94,4 +91,3 @@ func (s *AvroSerializer) Deserialize(c *client.GlueSchemaRegistryClient, schemaN
 
 	return auditEvent, nil
 }
-

@@ -104,6 +104,41 @@ With coverage:
 pytest tests/ --cov=glue_schema_registry --cov-report=html
 ```
 
+## Generating Documentation
+
+### Using pydoc
+
+Generate API documentation using pydoc:
+
+```bash
+make python-docs
+```
+
+The documentation will be generated in `docs/html/` directory as HTML files.
+
+### Using Sphinx (Recommended)
+
+For better documentation with Sphinx:
+
+1. Install Sphinx:
+```bash
+source venv/bin/activate
+pip install sphinx sphinx-rtd-theme
+```
+
+2. Initialize Sphinx (if not already done):
+```bash
+cd docs
+sphinx-quickstart
+```
+
+3. Build documentation:
+```bash
+make html
+```
+
+The documentation will be generated in `docs/_build/html/` directory.
+
 ## Building the Package
 
 The package can be built as a wheel and source distribution:

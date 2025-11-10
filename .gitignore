@@ -48,6 +48,9 @@ gradle-app.setting
 !gradlew.bat
 gradle-wrapper.jar.sha256
 .gradletasknamecache
+# Java documentation (specific paths since build/ is ignored)
+java/build/docs/
+java/target/docs/
 
 # Generated sources
 generated/
@@ -182,6 +185,10 @@ dmypy.json
 python/venv/
 python/env/
 python/.venv/
+# Python documentation
+python/docs/html/
+python/*.html
+python/docs/_build/
 
 # Golang
 *.exe
@@ -194,3 +201,6 @@ python/.venv/
 go.work
 go.work.sum
 vendor/
+# Golang documentation
+golang/docs/html/
+golang/docs/go-doc.txt

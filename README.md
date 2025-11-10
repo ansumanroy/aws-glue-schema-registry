@@ -46,6 +46,12 @@ make java-test-gradle    # Explicitly use Gradle
 make java-test-maven     # Use Maven instead
 make python-test         # Uses virtual environment
 make golang-test
+
+# Generate documentation
+make java-javadoc        # Generate Javadoc (default: Gradle)
+make python-docs         # Generate Python documentation
+make golang-docs         # Generate Golang documentation
+make docs                # Generate all documentation
 ```
 
 ### Python Virtual Environment

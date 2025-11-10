@@ -94,6 +94,26 @@
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Optional MuleSoft dependencies (provided scope - only needed in MuleSoft runtime) -->
+        <!-- These are commented out to avoid breaking standalone usage -->
+        <!-- Uncomment and configure versions when using in MuleSoft environment -->
+        <!--
+        <dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-java-module</artifactId>
+            <version>1.2.0</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.runtime</groupId>
+            <artifactId>mule-core</artifactId>
+            <version>4.6.0</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        -->
     </dependencies>
 
     <build>
@@ -169,6 +189,39 @@
                 <executions>
                     <execution>
                         <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Maven Javadoc Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <charset>UTF-8</charset>
+                    <docencoding>UTF-8</docencoding>
+                    <author>true</author>
+                    <version>true</version>
+                    <windowtitle>${project.name} ${project.version} API Documentation</windowtitle>
+                    <doctitle>${project.name} ${project.version} API Documentation</doctitle>
+                    <bottom>Copyright © 2024 AWS Glue Schema Registry. All rights reserved.</bottom>
+                    <links>
+                        <link>https://docs.oracle.com/javase/17/docs/api/</link>
+                        <link>https://sdk.amazonaws.com/java/api/latest/</link>
+                    </links>
+                    <doclint>none</doclint>
+                    <quiet>true</quiet>
+                    <failOnError>false</failOnError>
+                    <outputDirectory>${project.build.directory}/docs/javadoc</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
                         <goals>
                             <goal>jar</goal>
                         </goals>

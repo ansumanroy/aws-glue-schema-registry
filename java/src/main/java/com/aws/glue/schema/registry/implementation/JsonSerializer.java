@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Utility class for serializing and deserializing SalesforceAudit objects
  * using JSON schemas retrieved from Glue Schema Registry.
+ * Provides static methods for backward compatibility.
  */
 public class JsonSerializer {
     
@@ -78,4 +79,3 @@ public class JsonSerializer {
         }
     }
 }
-

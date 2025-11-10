@@ -97,6 +97,32 @@ mvn test
 make java-test-maven
 ```
 
+## Generating Documentation
+
+### Javadoc
+
+Generate API documentation using Javadoc:
+
+#### Using Gradle
+```bash
+./gradlew javadoc
+# Or
+make java-javadoc-gradle
+```
+
+#### Using Maven
+```bash
+mvn javadoc:javadoc
+# Or
+make java-javadoc-maven
+```
+
+The documentation will be generated in:
+- **Gradle**: `build/docs/javadoc/index.html`
+- **Maven**: `target/docs/javadoc/index.html`
+
+Open the `index.html` file in a browser to view the documentation.
+
 ## Project Structure
 
 ```
@@ -120,11 +146,83 @@ java/
 - Jackson (for JSON)
 - JUnit 5 (for testing)
 
+## MuleSoft Integration
+
+This client can be integrated into MuleSoft applications. See [MULESOFT_INTEGRATION.md](MULESOFT_INTEGRATION.md) for detailed instructions.
+
+### Quick MuleSoft Setup
+
+1. Build the JAR: `mvn clean package`
+2. Add to MuleSoft project as Maven dependency
+3. Configure AWS credentials in MuleSoft secure properties
+4. Use `GlueSchemaRegistryMuleModule` in your flows
+
+### MuleSoft Example
+
+```java
+// Create module from MuleSoft configuration
+GlueSchemaRegistryMuleModule module = GlueSchemaRegistryMuleModule.create();
+
+// Serialize to Avro
+byte[] serialized = module.serializeAvro("SalesforceAudit", auditEvent);
+
+// Deserialize from Avro
+SalesforceAudit deserialized = module.deserializeAvro("SalesforceAudit", serialized);
+```
+
+See [MULESOFT_INTEGRATION.md](MULESOFT_INTEGRATION.md) for complete examples.
+
+## Configuration
+
+### Using Configuration Builder
+
+```java
+GlueSchemaRegistryConfig config = GlueSchemaRegistryConfig.builder()
+    .registryName("my-registry")
+    .region(Region.US_EAST_1)
+    .accessKeyId("your-access-key")
+    .secretAccessKey("your-secret-key")
+    .build();
+
+GlueSchemaRegistryClient client = new GlueSchemaRegistryClient(config);
+```
+
+### Using Environment Variables
+
+```java
+// Reads from GLUE_REGISTRY_NAME and AWS_REGION environment variables
+GlueSchemaRegistryConfig config = GlueSchemaRegistryConfig.fromEnvironment();
+GlueSchemaRegistryClient client = new GlueSchemaRegistryClient(config);
+```
+
+### Using Client Builder
+
+```java
+GlueSchemaRegistryClient client = GlueSchemaRegistryClient.builder()
+    .registryName("my-registry")
+    .region(Region.US_EAST_1)
+    .build();
+```
+
 ## Environment Variables
 
 - `GLUE_REGISTRY_NAME`: Name of the Glue Schema Registry (default: "glue-schema-registry-ansumanroy-6219")
 - `AWS_REGION`: AWS region (default: "us-east-1")
-- AWS credentials should be configured via AWS CLI or environment variables
+- `AWS_ACCESS_KEY_ID`: AWS access key ID (optional)
+- `AWS_SECRET_ACCESS_KEY`: AWS secret access key (optional)
+- `AWS_SESSION_TOKEN`: AWS session token (optional)
+
+AWS credentials can be configured via:
+1. Environment variables
+2. AWS credential chain (IAM roles, credential files, etc.)
+3. MuleSoft secure properties (in MuleSoft environment)
+4. Explicit configuration (programmatic)
+
+## Examples
+
+See the `examples/` directory for usage examples:
+- `examples/standalone/`: Standalone Java usage examples
+- `examples/mulesoft/`: MuleSoft integration examples
 
 ## License
 

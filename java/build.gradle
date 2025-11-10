@@ -49,6 +49,11 @@ dependencies {
     // Test Dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
     testImplementation 'org.mockito:mockito-core:5.3.1'
+    
+    // Optional MuleSoft dependencies (provided scope - only needed in MuleSoft runtime)
+    // These are optional to avoid breaking standalone usage
+    // compileOnly 'org.mule.modules:mule-java-module:1.2.0'
+    // compileOnly 'org.mule.runtime:mule-core:4.6.0'
 }
 
 // Avro plugin configuration
@@ -117,4 +122,40 @@ jar {
             'Implementation-Vendor': 'AWS Glue Schema Registry'
         )
     }
+}
+
+// Javadoc configuration
+javadoc {
+    source = sourceSets.main.allJava
+    classpath = configurations.compileClasspath
+    destinationDir = file("${buildDir}/docs/javadoc")
+    
+    options {
+        encoding = 'UTF-8'
+        charSet = 'UTF-8'
+        docEncoding = 'UTF-8'
+        author = true
+        version = true
+        windowTitle = "${project.name} ${project.version} API Documentation"
+        docTitle = "${project.name} ${project.version} API Documentation"
+        bottom = "Copyright © ${new Date().format('yyyy')} AWS Glue Schema Registry. All rights reserved."
+        links = [
+            'https://docs.oracle.com/javase/17/docs/api/',
+            'https://sdk.amazonaws.com/java/api/latest/'
+        ]
+        addStringOption('Xdoclint:none', '-quiet')
+        memberLevel = JavadocMemberLevel.PUBLIC
+    }
+    
+    // Include all packages
+    include 'com/aws/glue/schema/registry/**'
+    
+    failOnError = false
+}
+
+// Task to generate Javadoc
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier.set('javadoc')
+    from javadoc.destinationDir
+    description = 'Creates a JAR file containing the Javadoc API documentation'
 }

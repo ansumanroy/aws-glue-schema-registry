@@ -16,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 /**
  * Utility class for serializing and deserializing SalesforceAudit objects
  * using Avro schemas retrieved from Glue Schema Registry.
+ * Provides static methods for backward compatibility.
  */
 public class AvroSerializer {
     
