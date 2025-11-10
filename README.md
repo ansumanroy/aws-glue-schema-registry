@@ -19,7 +19,7 @@ All implementations support:
 
 ### Prerequisites
 
-- **Java**: Java 17 and Gradle (or use the included wrapper)
+- **Java**: Java 17 and Gradle (wrapper included) or Maven
 - **Python**: Python 3.8+ and pip (virtual environment will be created automatically)
 - **Golang**: Go 1.21+
 - **AWS CLI**: Configured with appropriate credentials
@@ -34,13 +34,17 @@ make build
 make test
 
 # Build individual projects
-make java-build
-make python-build      # Creates venv and builds package
+make java-build          # Uses Gradle (default)
+make java-build-gradle   # Explicitly use Gradle
+make java-build-maven    # Use Maven instead
+make python-build        # Creates venv and builds package
 make golang-build
 
 # Run individual tests
-make java-test
-make python-test      # Uses virtual environment
+make java-test           # Uses Gradle (default)
+make java-test-gradle    # Explicitly use Gradle
+make java-test-maven     # Use Maven instead
+make python-test         # Uses virtual environment
 make golang-test
 ```
 

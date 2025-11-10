@@ -1,4 +1,4 @@
-.PHONY: help build test clean java-build java-test java-clean java-jar python-venv python-build python-test python-clean python-install python-install-dev python-install-package golang-build golang-test golang-clean golang-install check-gradle check-java check-python check-go setup info
+.PHONY: help build test clean java-build java-test java-clean java-jar java-build-maven java-test-maven java-clean-maven java-jar-maven python-venv python-build python-test python-clean python-install python-install-dev python-install-package golang-build golang-test golang-clean golang-install check-gradle check-maven check-java check-python check-go setup info
 
 # Default target
 .DEFAULT_GOAL := help
@@ -24,26 +24,52 @@ help: ## Display this help message
 
 ##@ Java Build
 
-java-build: check-gradle check-java ## Build Java project using Gradle
+java-build-gradle: check-gradle check-java ## Build Java project using Gradle
 	@echo "$(COLOR_BLUE)Building Java project with Gradle...$(COLOR_RESET)"
 	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew build --no-daemon
 
-java-test: check-gradle check-java ## Run Java tests using Gradle
+java-test-gradle: check-gradle check-java ## Run Java tests using Gradle
 	@echo "$(COLOR_BLUE)Running Java tests with Gradle...$(COLOR_RESET)"
 	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew test --no-daemon --rerun-tasks
 
-java-clean: check-gradle ## Clean Java build artifacts using Gradle
+java-clean-gradle: check-gradle ## Clean Java build artifacts using Gradle
 	@echo "$(COLOR_BLUE)Cleaning Java build with Gradle...$(COLOR_RESET)"
 	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew clean --no-daemon
 
-java-jar: java-build ## Build Java JAR file using Gradle
+java-jar-gradle: java-build-gradle ## Build Java JAR file using Gradle
 	@echo "$(COLOR_BLUE)Building JAR with Gradle...$(COLOR_RESET)"
 	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew jar --no-daemon
 	@echo "$(COLOR_GREEN)JAR created: $(JAVA_DIR)/build/libs/schema-registry-client-1.0.0-SNAPSHOT.jar$(COLOR_RESET)"
+
+java-build-maven: check-maven check-java ## Build Java project using Maven
+	@echo "$(COLOR_BLUE)Building Java project with Maven...$(COLOR_RESET)"
+	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn clean compile
+
+java-test-maven: check-maven check-java ## Run Java tests using Maven
+	@echo "$(COLOR_BLUE)Running Java tests with Maven...$(COLOR_RESET)"
+	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn test
+
+java-clean-maven: check-maven ## Clean Java build artifacts using Maven
+	@echo "$(COLOR_BLUE)Cleaning Java build with Maven...$(COLOR_RESET)"
+	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn clean
+
+java-jar-maven: java-build-maven ## Build Java JAR file using Maven
+	@echo "$(COLOR_BLUE)Building JAR with Maven...$(COLOR_RESET)"
+	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn package -DskipTests
+	@echo "$(COLOR_GREEN)JAR created: $(JAVA_DIR)/target/schema-registry-client-1.0.0-SNAPSHOT.jar$(COLOR_RESET)"
+
+java-build: java-build-gradle ## Build Java project (default: Gradle)
+java-test: java-test-gradle ## Run Java tests (default: Gradle)
+java-clean: java-clean-gradle ## Clean Java build artifacts (default: Gradle)
+java-jar: java-jar-gradle ## Build Java JAR file (default: Gradle)
 
 ##@ Python Build
 
@@ -151,6 +177,18 @@ check-java: ## Check if Java 17+ is installed
 		java -version 2>&1 | head -1; \
 	fi
 
+check-maven: ## Check if Maven is installed
+	@command -v mvn >/dev/null 2>&1 || { \
+		echo "$(COLOR_YELLOW)Error: Maven is not installed.$(COLOR_RESET)"; \
+		echo "Please install Maven: https://maven.apache.org/install.html"; \
+		echo "Or use: brew install maven"; \
+		exit 1; \
+	}
+	@mvn --version | head -1 || { \
+		echo "$(COLOR_YELLOW)Warning: Maven may not be properly configured.$(COLOR_RESET)"; \
+		exit 1; \
+	}
+
 check-python: ## Check if Python is installed
 	@command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1 || { \
 		echo "$(COLOR_YELLOW)Error: Python is not installed.$(COLOR_RESET)"; \
@@ -192,6 +230,10 @@ info: ## Display project information
 	@python3 --version 2>&1 | sed 's/^/  Python: /' || python --version 2>&1 | sed 's/^/  Python: /' || echo "  Python: Not installed"
 	@go version 2>&1 | sed 's/^/  Go: /' || echo "  Go: Not installed"
 	@echo ""
+	@echo "$(COLOR_BOLD)Build Tools:$(COLOR_RESET)"
+	@./$(JAVA_DIR)/gradlew --version 2>&1 | grep "Gradle" | head -1 | sed 's/^/  Gradle: /' || echo "  Gradle: Not available"
+	@mvn --version 2>&1 | head -1 | sed 's/^/  Maven: /' || echo "  Maven: Not installed"
+	@echo ""
 	@echo "$(COLOR_BOLD)Java Version Requirement:$(COLOR_RESET)"
 	@echo "  Required: Java 17 or higher"
 	@JAVA_VERSION=$$(java -version 2>&1 | head -1 | sed -n 's/.*version "\([0-9]*\)\..*/\1/p'); \
@@ -200,3 +242,8 @@ info: ## Display project information
 	else \
 		echo "  Status: $(COLOR_YELLOW)⚠ Java 17+ required$(COLOR_RESET)"; \
 	fi
+	@echo ""
+	@echo "$(COLOR_BOLD)Build System Options:$(COLOR_RESET)"
+	@echo "  Gradle: make java-build-gradle, make java-test-gradle, make java-jar-gradle"
+	@echo "  Maven:  make java-build-maven, make java-test-maven, make java-jar-maven"
+	@echo "  Default: make java-build (uses Gradle)"

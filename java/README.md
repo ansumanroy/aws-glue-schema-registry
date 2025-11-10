@@ -12,7 +12,11 @@ This Java package provides:
 
 ## Installation
 
-This project uses Gradle and requires **Java 17**. The Gradle wrapper is included, so you can build without installing Gradle:
+This project supports both **Gradle** and **Maven** builds and requires **Java 17**.
+
+### Using Gradle (Default)
+
+The Gradle wrapper is included, so you can build without installing Gradle:
 
 ```bash
 # Verify Java version (should be 17)
@@ -20,6 +24,32 @@ java -version
 
 # Build the project
 ./gradlew build
+
+# Or using Makefile
+make java-build-gradle
+```
+
+### Using Maven
+
+Maven build is also supported for MuleSoft and other Maven-based projects:
+
+```bash
+# Verify Java version (should be 17)
+java -version
+
+# Build the project
+mvn clean compile
+
+# Run tests
+mvn test
+
+# Build JAR
+mvn package
+
+# Or using Makefile
+make java-build-maven
+make java-test-maven
+make java-jar-maven
 ```
 
 ## Quick Start
@@ -53,8 +83,18 @@ SalesforceAudit deserialized = AvroSerializer.deserialize(
 
 ## Running Tests
 
+### Using Gradle
 ```bash
 ./gradlew test
+# Or
+make java-test-gradle
+```
+
+### Using Maven
+```bash
+mvn test
+# Or
+make java-test-maven
 ```
 
 ## Project Structure
@@ -68,7 +108,8 @@ java/
 │   │       ├── implementation/      # Serializers
 │   │       └── implementation/model/ # Data models
 │   └── test/java/                   # Tests
-├── build.gradle                     # Build configuration
+├── build.gradle                     # Gradle build configuration
+├── pom.xml                          # Maven build configuration
 └── README.md
 ```
 
