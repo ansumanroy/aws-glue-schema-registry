@@ -57,6 +57,8 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
 
       - name: Publish Java test results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -111,6 +113,8 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
 
       - name: Publish Python test results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -167,6 +171,8 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
 
       - name: Upload Golang artifacts
         uses: actions/upload-artifact@v4
