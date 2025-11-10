@@ -1,105 +1,60 @@
-# AWS Glue Schema Registry Java Client
+# AWS Glue Schema Registry - Java Client
 
-Java wrapper client for interacting with AWS Glue Schema Registry.
+Java wrapper client for AWS Glue Schema Registry with Avro and JSON serialization support.
 
-## Features
+## Overview
 
-- Create and manage schemas in Glue Schema Registry
-- Register schema versions
-- Retrieve schemas and schema versions
-- Update schema compatibility modes
-- List all schemas in a registry
+This Java package provides:
+- **Client**: A wrapper library for interacting with AWS Glue Schema Registry
+- **Avro Serialization**: Serialize/deserialize objects using Avro schemas
+- **JSON Serialization**: Serialize/deserialize objects using JSON schemas
+- **Model Classes**: Data models for schema objects
 
-## Prerequisites
+## Installation
 
-- Java 11 or higher
-- Build tool: Maven 3.6+ or Gradle 7.0+
-- AWS credentials configured (via AWS CLI, environment variables, or IAM role)
-
-## Building
-
-### Using Gradle
+This project uses Gradle and requires **Java 17**. The Gradle wrapper is included, so you can build without installing Gradle:
 
 ```bash
+# Verify Java version (should be 17)
+java -version
+
 # Build the project
 ./gradlew build
-
-# Compile only
-./gradlew compileJava
-
-# Run tests
-./gradlew test
-
-# Clean build
-./gradlew clean build
 ```
 
-### Using Maven
-
-```bash
-# Build the project
-mvn clean compile
-
-# Run tests
-mvn test
-
-# Clean build
-mvn clean install
-```
-
-## Usage Example
+## Quick Start
 
 ```java
 import com.aws.glue.schema.registry.client.GlueSchemaRegistryClient;
 import com.aws.glue.schema.registry.implementation.AvroSerializer;
 import com.aws.glue.schema.registry.implementation.model.SalesforceAudit;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.glue.model.Compatibility;
 
-// Create a client
+// Initialize client
 GlueSchemaRegistryClient client = new GlueSchemaRegistryClient(
-    Region.US_EAST_1, 
-    "my-schema-registry"
-);
+    Region.US_EAST_1, "my-registry");
 
-// Create a schema
-String schemaDefinition = """
-    {
-      "type": "record",
-      "name": "User",
-      "fields": [
-        {"name": "id", "type": "string"},
-        {"name": "name", "type": "string"}
-      ]
-    }
-    """;
-
-client.createSchema(
-    "user-schema",
-    "AVRO",
-    schemaDefinition,
-    Compatibility.BACKWARD
-);
-
-// Get a schema
-var schema = client.getSchema("user-schema");
-
-// Serialize/Deserialize example
+// Create an audit event
 SalesforceAudit auditEvent = new SalesforceAudit(
     "event-123",
     "UserLogin",
-    System.currentTimeMillis(),
+    1704067200000L,
     "User logged in"
 );
 
-byte[] serialized = AvroSerializer.serialize(client, "SalesforceAudit", auditEvent);
-SalesforceAudit deserialized = AvroSerializer.deserialize(client, "SalesforceAudit", serialized);
+// Serialize
+byte[] serialized = AvroSerializer.serialize(
+    client, "SalesforceAudit", auditEvent);
 
-// List all schemas
-var schemas = client.listSchemas();
+// Deserialize
+SalesforceAudit deserialized = AvroSerializer.deserialize(
+    client, "SalesforceAudit", serialized);
+```
 
-// Clean up
-client.close();
+## Running Tests
+
+```bash
+./gradlew test
 ```
 
 ## Project Structure
@@ -107,42 +62,29 @@ client.close();
 ```
 java/
 ├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/aws/glue/schema/registry/
-│   │   │       ├── client/
-│   │   │       │   ├── GlueSchemaRegistryClient.java
-│   │   │       │   └── SchemaRegistryException.java
-│   │   │       └── implementation/
-│   │   │           ├── AvroSerializer.java
-│   │   │           └── model/
-│   │   │               └── SalesforceAudit.java
-│   │   └── resources/
-│   │       └── salesforce-audit.avsc
-│   └── test/
-│       └── java/
-│           └── com/aws/glue/schema/registry/
-│               └── SalesforceAuditSerializationTest.java
-├── build.gradle
-├── settings.gradle
-├── pom.xml (Maven alternative)
+│   ├── main/java/
+│   │   └── com/aws/glue/schema/registry/
+│   │       ├── client/              # Glue Schema Registry client
+│   │       ├── implementation/      # Serializers
+│   │       └── implementation/model/ # Data models
+│   └── test/java/                   # Tests
+├── build.gradle                     # Build configuration
 └── README.md
 ```
 
-## Package Organization
-
-- **`com.aws.glue.schema.registry.client`**: Core client classes
-  - `GlueSchemaRegistryClient`: Main client for interacting with Glue Schema Registry
-  - `SchemaRegistryException`: Custom exception for schema registry operations
-
-- **`com.aws.glue.schema.registry.implementation`**: Implementation classes
-  - `AvroSerializer`: Utility for Avro serialization/deserialization
-  - `model`: Data model classes
-    - `SalesforceAudit`: Model representing Salesforce audit events
-
 ## Dependencies
 
-- AWS SDK for Java v2 (Glue client)
-- Jackson for JSON processing
-- SLF4J for logging
-- JUnit 5 for testing
+- AWS SDK for Java v2 (Glue)
+- Apache Avro
+- Jackson (for JSON)
+- JUnit 5 (for testing)
+
+## Environment Variables
+
+- `GLUE_REGISTRY_NAME`: Name of the Glue Schema Registry (default: "glue-schema-registry-ansumanroy-6219")
+- `AWS_REGION`: AWS region (default: "us-east-1")
+- AWS credentials should be configured via AWS CLI or environment variables
+
+## License
+
+See [LICENSE](../LICENSE) file for details.

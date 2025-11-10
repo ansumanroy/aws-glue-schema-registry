@@ -1,100 +1,103 @@
-# AWS Glue Schema Registry
+# AWS Glue Schema Registry - Multi-Language Client
 
-Java wrapper client for AWS Glue Schema Registry with Terraform infrastructure as code.
+Multi-language wrapper clients for AWS Glue Schema Registry with Avro and JSON serialization support.
 
 ## Overview
 
-This project provides:
-- **Java Client**: A wrapper library for interacting with AWS Glue Schema Registry
-- **Terraform IAC**: Infrastructure as Code to deploy schemas to Glue Schema Registry
-- **Makefile Wrapper**: Simplified build and deployment commands
+This project provides client libraries in three languages:
+- **Java**: Full-featured client with Gradle build system
+- **Python**: Python package with pytest test suite
+- **Golang**: Go module with standard testing
+
+All implementations support:
+- AWS Glue Schema Registry client operations
+- Avro serialization/deserialization
+- JSON serialization/deserialization
+- SalesforceAudit model example
 
 ## Quick Start
 
 ### Prerequisites
 
-- Java 11+
-- Terraform >= 1.0
-- AWS CLI configured
-- Make (for convenience wrapper)
-
-### Initial Setup
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd aws-glue-schema-registry
-
-# Set up the project
-make setup
-
-# Configure AWS credentials
-aws configure
-
-# Configure Terraform variables
-cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# Edit terraform/terraform.tfvars with your settings
-```
-
-### Deploy to AWS
-
-```bash
-# Deploy the Glue Schema Registry and SalesforceAudit schema
-make deploy
-
-# Or step by step:
-make terraform-init
-make terraform-plan
-make terraform-apply
-```
+- **Java**: Java 17 and Gradle (or use the included wrapper)
+- **Python**: Python 3.8+ and pip (virtual environment will be created automatically)
+- **Golang**: Go 1.21+
+- **AWS CLI**: Configured with appropriate credentials
 
 ### Build and Test
 
 ```bash
-# Build Java project
-make java-build
-
-# Run tests
-make java-test
-
-# Build everything
+# Build all projects
 make build
+
+# Run all tests
+make test
+
+# Build individual projects
+make java-build
+make python-build      # Creates venv and builds package
+make golang-build
+
+# Run individual tests
+make java-test
+make python-test      # Uses virtual environment
+make golang-test
+```
+
+### Python Virtual Environment
+
+The Python implementation uses a virtual environment to isolate dependencies:
+
+```bash
+# Create virtual environment
+make python-venv
+
+# Install dependencies
+make python-install
+
+# Install development dependencies (includes pytest, build tools)
+make python-install-dev
+
+# Build Python package (wheel and source distribution)
+make python-build
+
+# Install the built package
+make python-install-package
 ```
 
 ## Project Structure
 
 ```
 aws-glue-schema-registry/
-├── src/                     # Java source code
-│   ├── main/java/           # Source code
-│   ├── main/resources/       # Resources (schema files for build)
-│   └── test/java/          # Tests
-├── schemas/                 # Schema files for Terraform (at project root)
-│   ├── avro/               # Avro schema files (.avsc)
-│   ├── json/               # JSON Schema files (.json)
-│   └── README.md           # Schema management guide
-├── terraform/               # Terraform IAC
-│   ├── main.tf             # Root configuration (calls module)
-│   ├── variables.tf        # Root variable definitions
-│   ├── outputs.tf          # Root output definitions
-│   ├── modules/
-│   │   └── schema-registry/  # Reusable Terraform module
-│   │       ├── main.tf      # Module resource definitions
-│   │       ├── variables.tf # Module variables
-│   │       ├── outputs.tf   # Module outputs
-│   │       └── README.md    # Module documentation
-│   └── terraform.tfvars    # Configuration file
-├── build.gradle            # Gradle build file
-├── pom.xml                 # Maven build file
-├── Makefile                # Build and deployment wrapper
-└── README.md              # This file
+├── java/                    # Java implementation
+│   ├── src/
+│   │   ├── main/java/       # Source code
+│   │   └── test/java/       # Tests
+│   ├── build.gradle         # Gradle build configuration
+│   └── README.md            # Java-specific documentation
+├── python/                  # Python implementation
+│   ├── glue_schema_registry/ # Package source
+│   ├── tests/               # Test files
+│   ├── requirements.txt     # Dependencies
+│   └── README.md            # Python-specific documentation
+├── golang/                  # Golang implementation
+│   ├── client/              # Client package
+│   ├── model/               # Model package
+│   ├── serializer/          # Serializer package
+│   ├── go.mod               # Go module
+│   └── README.md            # Golang-specific documentation
+├── schemas/                 # Schema definition files
+│   ├── avro/               # Avro schema files
+│   └── json/               # JSON Schema files
+├── Makefile                 # Build automation
+└── README.md               # This file
 ```
 
-## Documentation
+## Language-Specific Documentation
 
-- **[Makefile Guide](Makefile.md)** - Detailed Makefile usage and examples
-- **[Java Client README](java/README.md)** - Java client documentation
-- **[Terraform README](terraform/README.md)** - Terraform configuration guide
+- **[Java README](java/README.md)** - Java client documentation
+- **[Python README](python/README.md)** - Python client documentation
+- **[Golang README](golang/README.md)** - Golang client documentation
 
 ## Common Commands
 
@@ -102,27 +105,104 @@ aws-glue-schema-registry/
 # View all available commands
 make help
 
-# Deploy to AWS
-make deploy
+# Build all projects
+make build
 
-# Build Java project
-make java-build
+# Run all tests
+make test
 
-# Run tests
-make java-test
+# Clean all build artifacts
+make clean
 
-# Destroy infrastructure
-make terraform-destroy
+# Setup project (create Gradle wrapper, etc.)
+make setup
+
+# Display project information
+make info
 ```
 
 ## Features
 
-- ✅ Java wrapper client for Glue Schema Registry
-- ✅ Avro serialization/deserialization support
-- ✅ Terraform infrastructure as code
-- ✅ Automated deployment with Makefile
-- ✅ Comprehensive test suite
+- ✅ Multi-language support (Java, Python, Golang)
+- ✅ AWS Glue Schema Registry client wrapper
+- ✅ Avro serialization/deserialization
+- ✅ JSON serialization/deserialization
+- ✅ Comprehensive test suites for each language
 - ✅ SalesforceAudit schema example
+- ✅ Unified Makefile for build automation
+
+## Environment Variables
+
+All implementations use the following environment variables:
+
+- `GLUE_REGISTRY_NAME`: Name of the Glue Schema Registry (default: "glue-schema-registry-ansumanroy-6219")
+- `AWS_REGION`: AWS region (default: "us-east-1")
+- AWS credentials should be configured via AWS CLI or environment variables
+
+## Example Usage
+
+### Java
+
+```java
+import com.aws.glue.schema.registry.client.GlueSchemaRegistryClient;
+import com.aws.glue.schema.registry.implementation.AvroSerializer;
+import com.aws.glue.schema.registry.implementation.model.SalesforceAudit;
+import software.amazon.awssdk.regions.Region;
+
+GlueSchemaRegistryClient client = new GlueSchemaRegistryClient(
+    Region.US_EAST_1, "my-registry");
+
+SalesforceAudit event = new SalesforceAudit(
+    "event-123", "UserLogin", 1704067200000L, "User logged in");
+
+byte[] serialized = AvroSerializer.serialize(client, "SalesforceAudit", event);
+SalesforceAudit deserialized = AvroSerializer.deserialize(
+    client, "SalesforceAudit", serialized);
+```
+
+### Python
+
+```python
+from glue_schema_registry.client import GlueSchemaRegistryClient
+from glue_schema_registry.avro_serializer import AvroSerializer
+from glue_schema_registry.model import SalesforceAudit
+
+client = GlueSchemaRegistryClient("us-east-1", "my-registry")
+
+event = SalesforceAudit(
+    event_id="event-123",
+    event_name="UserLogin",
+    timestamp=1704067200000,
+    event_details="User logged in"
+)
+
+serialized = AvroSerializer.serialize(client, "SalesforceAudit", event)
+deserialized = AvroSerializer.deserialize(client, "SalesforceAudit", serialized)
+```
+
+### Golang
+
+```go
+import (
+    "github.com/aws-glue-schema-registry/golang/client"
+    "github.com/aws-glue-schema-registry/golang/model"
+    "github.com/aws-glue-schema-registry/golang/serializer"
+)
+
+c, _ := client.NewGlueSchemaRegistryClient("us-east-1", "my-registry")
+defer c.Close()
+
+event := &model.SalesforceAudit{
+    EventID:      "event-123",
+    EventName:    "UserLogin",
+    Timestamp:    1704067200000,
+    EventDetails: "User logged in",
+}
+
+avroSerializer := &serializer.AvroSerializer{}
+serialized, _ := avroSerializer.Serialize(c, "SalesforceAudit", event)
+deserialized, _ := avroSerializer.Deserialize(c, "SalesforceAudit", serialized)
+```
 
 ## License
 
