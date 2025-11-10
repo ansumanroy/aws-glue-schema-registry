@@ -1,36 +1,23 @@
 package serializer_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/aws-glue-schema-registry/golang/client"
 	"github.com/aws-glue-schema-registry/golang/model"
 	"github.com/aws-glue-schema-registry/golang/serializer"
+	"github.com/aws-glue-schema-registry/golang/testconfig"
 )
 
-func getRegistryName() string {
-	if name := os.Getenv("GLUE_REGISTRY_NAME"); name != "" {
-		return name
-	}
-	return "glue-schema-registry-ansumanroy-6219"
-}
-
-func getAWSRegion() string {
-	if region := os.Getenv("AWS_REGION"); region != "" {
-		return region
-	}
-	return "us-east-1"
-}
-
 func TestAvroSerialization(t *testing.T) {
-	c, err := client.NewGlueSchemaRegistryClient(getAWSRegion(), getRegistryName())
+	cfg := testconfig.LoadConfig()
+	c, err := client.NewGlueSchemaRegistryClient(cfg.AWSRegion, cfg.RegistryName)
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 	defer c.Close()
 
-	schemaName := "SalesforceAudit"
+	schemaName := cfg.AvroSchemaName
 	avroSerializer := &serializer.AvroSerializer{}
 
 	// Create test event

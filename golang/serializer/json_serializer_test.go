@@ -6,16 +6,18 @@ import (
 	"github.com/aws-glue-schema-registry/golang/client"
 	"github.com/aws-glue-schema-registry/golang/model"
 	"github.com/aws-glue-schema-registry/golang/serializer"
+	"github.com/aws-glue-schema-registry/golang/testconfig"
 )
 
 func TestJsonSerialization(t *testing.T) {
-	c, err := client.NewGlueSchemaRegistryClient(getAWSRegion(), getRegistryName())
+	cfg := testconfig.LoadConfig()
+	c, err := client.NewGlueSchemaRegistryClient(cfg.AWSRegion, cfg.RegistryName)
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
 	defer c.Close()
 
-	schemaName := "SalesAuditJSON"
+	schemaName := cfg.JsonSchemaName
 	jsonSerializer := &serializer.JsonSerializer{}
 
 	// Create test event
@@ -56,4 +58,3 @@ func TestJsonSerialization(t *testing.T) {
 		t.Errorf("EventDetails mismatch: expected %s, got %s", originalEvent.EventDetails, deserializedEvent.EventDetails)
 	}
 }
-

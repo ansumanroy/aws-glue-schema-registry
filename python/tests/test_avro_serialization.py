@@ -2,24 +2,24 @@
 using GlueSchemaRegistryClient with Avro.
 """
 
-import os
 import pytest
 from glue_schema_registry.client import GlueSchemaRegistryClient
 from glue_schema_registry.avro_serializer import AvroSerializer
 from glue_schema_registry.model import SalesforceAudit
+from tests.test_config import TestConfig
 
 
 @pytest.fixture(scope="module")
 def client():
     """Initialize the client - assumes AWS credentials are configured."""
-    registry_name = os.getenv("GLUE_REGISTRY_NAME", "glue-schema-registry-ansumanroy-6219")
-    aws_region = os.getenv("AWS_REGION", "us-east-1")
+    registry_name = TestConfig.get_registry_name()
+    aws_region = TestConfig.get_aws_region()
     client = GlueSchemaRegistryClient(aws_region, registry_name)
     yield client
     client.close()
 
 
-SCHEMA_NAME = "SalesforceAudit"
+SCHEMA_NAME = TestConfig.get_avro_schema_name()
 
 
 class TestSalesforceAuditAvroSerialization:

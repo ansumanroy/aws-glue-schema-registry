@@ -2,10 +2,10 @@ package com.aws.glue.schema.registry;
 
 import com.aws.glue.schema.registry.client.GlueSchemaRegistryClient;
 import com.aws.glue.schema.registry.client.SchemaRegistryException;
+import com.aws.glue.schema.registry.config.TestConfig;
 import com.aws.glue.schema.registry.implementation.JsonSerializer;
 import com.aws.glue.schema.registry.implementation.model.SalesforceAudit;
 import org.junit.jupiter.api.*;
-import software.amazon.awssdk.regions.Region;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,14 +17,13 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SalesforceAuditJsonSerializationTest {
     
     private static GlueSchemaRegistryClient client;
-    private static final String REGISTRY_NAME = System.getenv().getOrDefault("GLUE_REGISTRY_NAME", "glue-schema-registry-ansumanroy-6219");
-    private static final Region AWS_REGION = Region.of(System.getenv().getOrDefault("AWS_REGION", "us-east-1"));
-    private static final String SCHEMA_NAME = "SalesAuditJSON";
+    private static final String REGISTRY_NAME = TestConfig.getRegistryName();
+    private static final String SCHEMA_NAME = TestConfig.getJsonSchemaName();
     
     @BeforeAll
     static void setUp() {
         // Initialize the client - assumes AWS credentials are configured
-        client = new GlueSchemaRegistryClient(AWS_REGION, REGISTRY_NAME);
+        client = new GlueSchemaRegistryClient(TestConfig.getAWSRegion(), REGISTRY_NAME);
     }
     
     @AfterAll

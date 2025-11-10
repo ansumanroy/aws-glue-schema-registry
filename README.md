@@ -141,12 +141,18 @@ make info
 - ✅ SalesforceAudit schema example
 - ✅ Unified Makefile for build automation
 
+## Test Configuration
+
+Test configuration values (registry name, AWS region, schema names) can be configured via configuration files or environment variables. For detailed information, see [TEST_CONFIGURATION.md](TEST_CONFIGURATION.md).
+
 ## Environment Variables
 
 All implementations use the following environment variables:
 
 - `GLUE_REGISTRY_NAME`: Name of the Glue Schema Registry (default: "glue-schema-registry-ansumanroy-6219")
 - `AWS_REGION`: AWS region (default: "us-east-1")
+- `SCHEMA_NAME_AVRO`: Avro schema name (default: "SalesforceAudit")
+- `SCHEMA_NAME_JSON`: JSON schema name (default: "SalesAuditJSON")
 - AWS credentials should be configured via AWS CLI or environment variables
 
 ## Example Usage
