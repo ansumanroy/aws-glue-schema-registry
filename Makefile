@@ -29,43 +29,65 @@ docs: java-javadoc python-docs golang-docs ## Generate all documentation (Javado
 
 java-build-gradle: check-gradle check-java ## Build Java project using Gradle
 	@echo "$(COLOR_BLUE)Building Java project with Gradle...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
+	if [ -z "$$JAVA_HOME" ]; then \
+		echo "$(COLOR_YELLOW)Warning: JAVA_HOME not set. Using system Java.$(COLOR_RESET)"; \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew build --no-daemon
 
 java-test-gradle: check-gradle check-java ## Run Java tests using Gradle
 	@echo "$(COLOR_BLUE)Running Java tests with Gradle...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
+	if [ -z "$$JAVA_HOME" ]; then \
+		echo "$(COLOR_YELLOW)Warning: JAVA_HOME not set. Using system Java.$(COLOR_RESET)"; \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew test --no-daemon --rerun-tasks
 
 java-clean-gradle: check-gradle ## Clean Java build artifacts using Gradle
 	@echo "$(COLOR_BLUE)Cleaning Java build with Gradle...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew clean --no-daemon
 
 java-jar-gradle: java-build-gradle ## Build Java JAR file using Gradle
 	@echo "$(COLOR_BLUE)Building JAR with Gradle...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew jar --no-daemon
 	@echo "$(COLOR_GREEN)JAR created: $(JAVA_DIR)/build/libs/schema-registry-client-1.0.0-SNAPSHOT.jar$(COLOR_RESET)"
 
 java-build-maven: check-maven check-java ## Build Java project using Maven
 	@echo "$(COLOR_BLUE)Building Java project with Maven...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn clean compile
 
 java-test-maven: check-maven check-java ## Run Java tests using Maven
 	@echo "$(COLOR_BLUE)Running Java tests with Maven...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn test
 
 java-clean-maven: check-maven ## Clean Java build artifacts using Maven
 	@echo "$(COLOR_BLUE)Cleaning Java build with Maven...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn clean
 
 java-jar-maven: java-build-maven ## Build Java JAR file using Maven
 	@echo "$(COLOR_BLUE)Building JAR with Maven...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn package -DskipTests
 	@echo "$(COLOR_GREEN)JAR created: $(JAVA_DIR)/target/schema-registry-client-1.0.0-SNAPSHOT.jar$(COLOR_RESET)"
 
@@ -76,13 +98,17 @@ java-jar: java-jar-gradle ## Build Java JAR file (default: Gradle)
 
 java-javadoc-gradle: check-gradle check-java ## Generate Java Javadoc using Gradle
 	@echo "$(COLOR_BLUE)Generating Javadoc with Gradle...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew javadoc --no-daemon
 	@echo "$(COLOR_GREEN)Javadoc generated: $(JAVA_DIR)/build/docs/javadoc/index.html$(COLOR_RESET)"
 
 java-javadoc-maven: check-maven check-java ## Generate Java Javadoc using Maven
 	@echo "$(COLOR_BLUE)Generating Javadoc with Maven...$(COLOR_RESET)"
-	@JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo "$(HOME)/Library/Java/JavaVirtualMachines/ms-17.0.16/Contents/Home"); \
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn javadoc:javadoc
 	@echo "$(COLOR_GREEN)Javadoc generated: $(JAVA_DIR)/target/docs/javadoc/index.html$(COLOR_RESET)"
 

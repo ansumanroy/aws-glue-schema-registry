@@ -141,6 +141,39 @@ make info
 - ✅ SalesforceAudit schema example
 - ✅ Unified Makefile for build automation
 
+## CI/CD
+
+CI/CD pipelines are available for automated builds and tests in both Azure DevOps and GitHub Actions. Two approaches are provided for each platform:
+
+### GitHub Actions
+
+#### Using Makefile (Recommended)
+- **Full Workflow**: `.github/workflows/build.yml` - Uses `make build`, `make test`, `make docs` targets
+- **Simple Workflow**: `.github/workflows/build-simple.yml` - Uses `make build` and `make test`
+
+#### Using Explicit Steps
+- **Full Workflow**: `.github/workflows/build-explicit.yml` - Explicit Gradle/Maven, Python, Golang commands
+
+**Setup**: Configure GitHub Secrets: `GLUE_REGISTRY_NAME`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+
+### Azure DevOps
+
+#### Using Makefile (Recommended)
+- **Full Pipeline**: `azure-pipelines.yml` - Uses `make build`, `make test`, `make docs` targets
+- **Simple Pipeline**: `.azure-pipelines/azure-pipelines-simple.yml` - Uses `make build` and `make test`
+
+#### Using Explicit Steps
+- **Full Pipeline**: `azure-pipelines-explicit.yml` - Explicit Gradle/Maven, Python, Golang commands
+- **Simple Pipeline**: `.azure-pipelines/azure-pipelines-simple-explicit.yml` - Explicit commands for each language
+
+**Benefits of Makefile approach**: Simpler pipeline, consistent with local development, easier to maintain
+
+**Benefits of Explicit Steps**: More control, detailed logging, easier to debug individual steps
+
+For detailed pipeline configuration, see:
+- [GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) - GitHub Actions workflows
+- [AZURE_PIPELINES.md](AZURE_PIPELINES.md) - Azure DevOps pipelines
+
 ## Test Configuration
 
 Test configuration values (registry name, AWS region, schema names) can be configured via configuration files or environment variables. For detailed information, see [TEST_CONFIGURATION.md](TEST_CONFIGURATION.md).

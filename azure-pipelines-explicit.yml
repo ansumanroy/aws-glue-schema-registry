@@ -1,0 +1,311 @@
+# Azure DevOps Pipeline for AWS Glue Schema Registry
+# Builds and tests Java, Python, and Golang implementations
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - feature/*
+  paths:
+    exclude:
+      - README.md
+      - '*.md'
+      - .gitignore
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+  GO_VERSION: '1.21'
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  GRADLE_CACHE_FOLDER: $(Pipeline.Workspace)/.gradle
+
+stages:
+  - stage: BuildAndTest
+    displayName: 'Build and Test'
+    jobs:
+      - job: JavaBuild
+        displayName: 'Build and Test Java'
+        steps:
+          - task: JavaToolInstaller@0
+            displayName: 'Install Java 17'
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+
+          - task: Cache@2
+            displayName: 'Cache Gradle dependencies'
+            inputs:
+              key: 'gradle | "$(Agent.OS)" | java/build.gradle'
+              restoreKeys: |
+                gradle | "$(Agent.OS)"
+              path: $(GRADLE_CACHE_FOLDER)
+
+          - task: Cache@2
+            displayName: 'Cache Maven dependencies'
+            inputs:
+              key: 'maven | "$(Agent.OS)" | java/pom.xml'
+              restoreKeys: |
+                maven | "$(Agent.OS)"
+              path: $(MAVEN_CACHE_FOLDER)
+
+          - script: |
+              cd java
+              chmod +x ./gradlew
+              ./gradlew clean build --no-daemon
+            displayName: 'Build Java with Gradle'
+            env:
+              JAVA_HOME: $(JAVA_HOME)
+
+          - script: |
+              cd java
+              chmod +x ./gradlew
+              ./gradlew test --no-daemon
+            displayName: 'Test Java with Gradle'
+            env:
+              JAVA_HOME: $(JAVA_HOME)
+              GLUE_REGISTRY_NAME: $(GLUE_REGISTRY_NAME)
+              AWS_REGION: $(AWS_REGION)
+
+          - script: |
+              cd java
+              mvn clean compile -DskipTests
+            displayName: 'Build Java with Maven'
+            continueOnError: true
+
+          - script: |
+              cd java
+              mvn test
+            displayName: 'Test Java with Maven'
+            continueOnError: true
+            env:
+              GLUE_REGISTRY_NAME: $(GLUE_REGISTRY_NAME)
+              AWS_REGION: $(AWS_REGION)
+
+          - task: PublishTestResults@2
+            displayName: 'Publish Java Test Results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'java/build/test-results/**/*.xml'
+            condition: always()
+
+          - task: PublishCodeCoverageResults@1
+            displayName: 'Publish Java Code Coverage'
+            inputs:
+              codeCoverageTool: 'JaCoCo'
+              summaryFileLocation: 'java/build/reports/jacoco/test/jacocoTestReport.xml'
+            condition: always()
+            continueOnError: true
+            enabled: false
+
+      - job: PythonBuild
+        displayName: 'Build and Test Python'
+        steps:
+          - task: UsePythonVersion@0
+            displayName: 'Use Python $(PYTHON_VERSION)'
+            inputs:
+              versionSpec: '$(PYTHON_VERSION)'
+              addToPath: true
+
+          - script: |
+              python -m pip install --upgrade pip
+              pip install virtualenv
+            displayName: 'Install Python dependencies'
+
+          - script: |
+              cd python
+              python -m venv venv
+              source venv/bin/activate
+              pip install --upgrade pip
+              pip install -e .
+              pip install pytest pytest-cov
+            displayName: 'Setup Python virtual environment'
+
+          - script: |
+              cd python
+              source venv/bin/activate
+              mkdir -p junit
+              python -m pytest tests/ -v --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=term
+            displayName: 'Test Python'
+            env:
+              GLUE_REGISTRY_NAME: $(GLUE_REGISTRY_NAME)
+              AWS_REGION: $(AWS_REGION)
+
+          - task: PublishTestResults@2
+            displayName: 'Publish Python Test Results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'python/junit/test-results.xml'
+            condition: always()
+
+          - task: PublishCodeCoverageResults@1
+            displayName: 'Publish Python Code Coverage'
+            inputs:
+              codeCoverageTool: 'Cobertura'
+              summaryFileLocation: 'python/coverage.xml'
+            condition: always()
+            continueOnError: true
+            enabled: false
+
+      - job: GolangBuild
+        displayName: 'Build and Test Golang'
+        steps:
+          - task: GoTool@0
+            displayName: 'Use Go $(GO_VERSION)'
+            inputs:
+              version: '$(GO_VERSION)'
+
+          - script: |
+              cd golang
+              go mod download
+            displayName: 'Download Go dependencies'
+
+          - script: |
+              cd golang
+              go build ./...
+            displayName: 'Build Golang'
+
+          - script: |
+              cd golang
+              go test ./... -v -json > test-results.json
+            displayName: 'Test Golang'
+            env:
+              GLUE_REGISTRY_NAME: $(GLUE_REGISTRY_NAME)
+              AWS_REGION: $(AWS_REGION)
+
+          - task: PublishTestResults@2
+            displayName: 'Publish Golang Test Results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'golang/test-results.json'
+            condition: always()
+            continueOnError: true
+
+  - stage: Documentation
+    displayName: 'Generate Documentation'
+    dependsOn: BuildAndTest
+    condition: succeeded()
+    jobs:
+      - job: GenerateDocs
+        displayName: 'Generate Documentation'
+        steps:
+          - task: JavaToolInstaller@0
+            displayName: 'Install Java 17'
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+
+          - task: UsePythonVersion@0
+            displayName: 'Use Python $(PYTHON_VERSION)'
+            inputs:
+              versionSpec: '$(PYTHON_VERSION)'
+              addToPath: true
+
+          - task: GoTool@0
+            displayName: 'Use Go $(GO_VERSION)'
+            inputs:
+              version: '$(GO_VERSION)'
+
+          - script: |
+              cd java
+              chmod +x ./gradlew
+              ./gradlew javadoc --no-daemon
+            displayName: 'Generate Java Javadoc'
+            env:
+              JAVA_HOME: $(JAVA_HOME)
+
+          - script: |
+              cd python
+              python -m venv venv
+              source venv/bin/activate
+              pip install -r requirements-dev.txt
+              python -m pydoc -w .
+            displayName: 'Generate Python Documentation'
+            continueOnError: true
+
+          - script: |
+              cd golang
+              go install golang.org/x/tools/cmd/godoc@latest
+              mkdir -p docs/html
+            displayName: 'Generate Golang Documentation'
+            continueOnError: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Documentation'
+            inputs:
+              pathToPublish: '$(Pipeline.Workspace)/docs'
+              artifactName: 'documentation'
+            condition: always()
+            continueOnError: true
+
+  - stage: Publish
+    displayName: 'Publish Artifacts'
+    dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: PublishArtifacts
+        displayName: 'Publish Build Artifacts'
+        steps:
+          - task: JavaToolInstaller@0
+            displayName: 'Install Java 17'
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+
+          - script: |
+              cd java
+              chmod +x ./gradlew
+              ./gradlew jar --no-daemon
+            displayName: 'Build Java JAR'
+            env:
+              JAVA_HOME: $(JAVA_HOME)
+
+          - script: |
+              cd python
+              python -m venv venv
+              source venv/bin/activate
+              pip install setuptools wheel
+              python setup.py sdist bdist_wheel
+            displayName: 'Build Python Package'
+            continueOnError: true
+
+          - script: |
+              cd golang
+              go build -o glue-schema-registry-client ./...
+            displayName: 'Build Golang Binary'
+            continueOnError: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Java Artifacts'
+            inputs:
+              pathToPublish: 'java/build/libs'
+              artifactName: 'java-artifacts'
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Python Artifacts'
+            inputs:
+              pathToPublish: 'python/dist'
+              artifactName: 'python-artifacts'
+            condition: always()
+            continueOnError: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Golang Artifacts'
+            inputs:
+              pathToPublish: 'golang'
+              artifactName: 'golang-artifacts'
+            condition: always()
+            continueOnError: true
+

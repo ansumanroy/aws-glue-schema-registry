@@ -1,0 +1,188 @@
+# GitHub Actions Workflow for AWS Glue Schema Registry
+# Uses Makefile targets for build and test operations
+# This showcases using Makefile in CI/CD pipelines
+
+name: Build and Test (Makefile)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+    paths-ignore:
+      - '*.md'
+      - '.gitignore'
+      - 'README.md'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+  GO_VERSION: '1.21'
+
+jobs:
+  build-and-test:
+    name: Build and Test All Projects
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build all projects
+        run: make build
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+      - name: Test all projects
+        run: make test
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Publish Java test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: 'java/build/test-results/**/*.xml'
+          check_name: 'Java Test Results'
+
+      - name: Publish Python test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: 'python/junit/test-results.xml'
+          check_name: 'Python Test Results'
+          continue_on_error: true
+
+  documentation:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: success()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Generate all documentation
+        run: make docs
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: documentation
+          path: |
+            java/build/docs/javadoc/
+            java/target/docs/javadoc/
+            python/docs/html/
+            golang/docs/html/
+          retention-days: 7
+
+  publish:
+    name: Publish Artifacts
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build Java JAR
+        run: make java-jar
+
+      - name: Build Python package
+        run: make python-build
+        continue-on-error: true
+
+      - name: Build Golang
+        run: make golang-build
+        continue-on-error: true
+
+      - name: Upload Java artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-artifacts
+          path: java/build/libs/*.jar
+          retention-days: 30
+
+      - name: Upload Python artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-artifacts
+          path: python/dist/*
+          retention-days: 30
+          continue-on-error: true
+
+      - name: Upload Golang artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: golang-artifacts
+          path: golang/
+          retention-days: 30
+          continue-on-error: true
+

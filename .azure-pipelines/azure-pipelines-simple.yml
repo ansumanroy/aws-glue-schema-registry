@@ -1,0 +1,73 @@
+# Simple Azure DevOps Pipeline for AWS Glue Schema Registry
+# Uses Makefile targets - Simplified version for quick CI/CD setup
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+  GO_VERSION: '1.21'
+
+steps:
+  - checkout: self
+
+  # Install prerequisites
+  - task: JavaToolInstaller@0
+    displayName: 'Install Java 17'
+    inputs:
+      versionSpec: '17'
+      jdkArchitectureOption: 'x64'
+      jdkSourceOption: 'PreInstalled'
+
+  - task: UsePythonVersion@0
+    displayName: 'Use Python $(PYTHON_VERSION)'
+    inputs:
+      versionSpec: '$(PYTHON_VERSION)'
+      addToPath: true
+
+  - task: GoTool@0
+    displayName: 'Use Go $(GO_VERSION)'
+    inputs:
+      version: '$(GO_VERSION)'
+
+  # Build all projects using Makefile
+  - script: |
+      export JAVA_HOME=$(JAVA_HOME)
+      export GLUE_REGISTRY_NAME=$(GLUE_REGISTRY_NAME)
+      export AWS_REGION=$(AWS_REGION)
+      make build
+    displayName: 'Build All Projects (make build)'
+    env:
+      JAVA_HOME: $(JAVA_HOME)
+
+  # Test all projects using Makefile
+  - script: |
+      export JAVA_HOME=$(JAVA_HOME)
+      export GLUE_REGISTRY_NAME=$(GLUE_REGISTRY_NAME)
+      export AWS_REGION=$(AWS_REGION)
+      make test
+    displayName: 'Test All Projects (make test)'
+    env:
+      JAVA_HOME: $(JAVA_HOME)
+
+  # Publish test results
+  - task: PublishTestResults@2
+    displayName: 'Publish Java Test Results'
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'java/build/test-results/**/*.xml'
+    condition: always()
+

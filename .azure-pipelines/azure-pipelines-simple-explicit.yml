@@ -1,0 +1,86 @@
+# Simple Azure DevOps Pipeline for AWS Glue Schema Registry
+# Simplified version for quick CI/CD setup
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+
+steps:
+  - checkout: self
+
+  # Java Build and Test
+  - task: JavaToolInstaller@0
+    displayName: 'Install Java 17'
+    inputs:
+      versionSpec: '17'
+      jdkArchitectureOption: 'x64'
+      jdkSourceOption: 'PreInstalled'
+
+  - script: |
+      cd java
+      chmod +x ./gradlew
+      ./gradlew clean build test --no-daemon
+    displayName: 'Build and Test Java'
+    env:
+      JAVA_HOME: $(JAVA_HOME)
+      GLUE_REGISTRY_NAME: $(GLUE_REGISTRY_NAME)
+      AWS_REGION: $(AWS_REGION)
+
+  - task: PublishTestResults@2
+    displayName: 'Publish Java Test Results'
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'java/build/test-results/**/*.xml'
+    condition: always()
+
+  # Python Build and Test
+  - task: UsePythonVersion@0
+    displayName: 'Use Python $(PYTHON_VERSION)'
+    inputs:
+      versionSpec: '$(PYTHON_VERSION)'
+      addToPath: true
+
+  - script: |
+      cd python
+      python -m venv venv
+      source venv/bin/activate
+      pip install --upgrade pip
+      pip install -e .
+      pip install pytest
+      python -m pytest tests/ -v
+    displayName: 'Build and Test Python'
+    env:
+      GLUE_REGISTRY_NAME: $(GLUE_REGISTRY_NAME)
+      AWS_REGION: $(AWS_REGION)
+
+  # Golang Build and Test
+  - task: GoTool@0
+    displayName: 'Use Go 1.21'
+    inputs:
+      version: '1.21'
+
+  - script: |
+      cd golang
+      go mod download
+      go build ./...
+      go test ./... -v
+    displayName: 'Build and Test Golang'
+    env:
+      GLUE_REGISTRY_NAME: $(GLUE_REGISTRY_NAME)
+      AWS_REGION: $(AWS_REGION)
+
