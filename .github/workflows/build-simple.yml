@@ -1,0 +1,143 @@
+# Simple GitHub Actions Workflow for AWS Glue Schema Registry
+# Uses Makefile targets - Simplified version for quick CI/CD setup
+
+name: Build and Test (Simple - Makefile)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+  GO_VERSION: '1.21'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Debug - Verify secrets availability
+        run: |
+          echo "🔍 Checking GitHub Secrets Availability..."
+          echo ""
+          
+          # Function to mask/hash a value
+          mask_value() {
+            local value="$1"
+            if [ -z "$value" ]; then
+              echo "❌ NOT SET"
+            elif [ ${#value} -le 8 ]; then
+              echo "✅ SET (length: ${#value}) - ***"
+            else
+              local prefix="${value:0:4}"
+              local suffix="${value: -4}"
+              echo "✅ SET (length: ${#value}) - ${prefix}***${suffix}"
+            fi
+          }
+          
+          echo "📋 Secret Status:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "AWS_ACCESS_KEY_ID:     $(mask_value "$AWS_ACCESS_KEY_ID")"
+          echo "AWS_SECRET_ACCESS_KEY: $(mask_value "$AWS_SECRET_ACCESS_KEY")"
+          echo "AWS_REGION:            $(mask_value "$AWS_REGION")"
+          echo "GLUE_REGISTRY_NAME:    $(mask_value "$GLUE_REGISTRY_NAME")"
+          echo "SCHEMA_NAME_AVRO:      $(mask_value "$SCHEMA_NAME_AVRO")"
+          echo "SCHEMA_NAME_JSON:      $(mask_value "$SCHEMA_NAME_JSON")"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          
+          # Check if required secrets are set
+          missing_secrets=0
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+            echo "⚠️  WARNING: AWS_ACCESS_KEY_ID is not set"
+            missing_secrets=$((missing_secrets + 1))
+          fi
+          if [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "⚠️  WARNING: AWS_SECRET_ACCESS_KEY is not set"
+            missing_secrets=$((missing_secrets + 1))
+          fi
+          if [ -z "$AWS_REGION" ]; then
+            echo "⚠️  WARNING: AWS_REGION is not set"
+            missing_secrets=$((missing_secrets + 1))
+          fi
+          if [ -z "$GLUE_REGISTRY_NAME" ]; then
+            echo "⚠️  WARNING: GLUE_REGISTRY_NAME is not set"
+            missing_secrets=$((missing_secrets + 1))
+          fi
+          
+          echo ""
+          if [ $missing_secrets -eq 0 ]; then
+            echo "✅ All required secrets are available"
+          else
+            echo "❌ $missing_secrets required secret(s) are missing"
+            echo "   Tests may fail if AWS credentials are not available"
+          fi
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Build all projects
+        run: make build
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Test all projects
+        run: make test
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Publish Java test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: 'java/build/test-results/**/*.xml'
+          check_name: 'Java Test Results'
+

@@ -1,0 +1,212 @@
+# Azure DevOps Pipeline for AWS Glue Schema Registry
+# Uses Makefile targets for build and test operations
+# This showcases using Makefile in CI/CD pipelines
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - feature/*
+  paths:
+    exclude:
+      - README.md
+      - '*.md'
+      - .gitignore
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+  GO_VERSION: '1.21'
+
+stages:
+  - stage: BuildAndTest
+    displayName: 'Build and Test (using Makefile)'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Build and Test All Projects'
+        steps:
+          - checkout: self
+
+          # Install Java 17
+          - task: JavaToolInstaller@0
+            displayName: 'Install Java 17'
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+
+          # Install Python
+          - task: UsePythonVersion@0
+            displayName: 'Use Python $(PYTHON_VERSION)'
+            inputs:
+              versionSpec: '$(PYTHON_VERSION)'
+              addToPath: true
+
+          # Install Go
+          - task: GoTool@0
+            displayName: 'Use Go $(GO_VERSION)'
+            inputs:
+              version: '$(GO_VERSION)'
+
+          # Build all projects using Makefile
+          - script: |
+              export JAVA_HOME=$(JAVA_HOME)
+              export GLUE_REGISTRY_NAME=$(GLUE_REGISTRY_NAME)
+              export AWS_REGION=$(AWS_REGION)
+              make build
+            displayName: 'Build All Projects (make build)'
+            env:
+              JAVA_HOME: $(JAVA_HOME)
+
+          # Test all projects using Makefile
+          - script: |
+              export JAVA_HOME=$(JAVA_HOME)
+              export GLUE_REGISTRY_NAME=$(GLUE_REGISTRY_NAME)
+              export AWS_REGION=$(AWS_REGION)
+              make test
+            displayName: 'Test All Projects (make test)'
+            env:
+              JAVA_HOME: $(JAVA_HOME)
+
+          # Publish Java test results
+          - task: PublishTestResults@2
+            displayName: 'Publish Java Test Results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'java/build/test-results/**/*.xml'
+            condition: always()
+
+          # Publish Python test results
+          - task: PublishTestResults@2
+            displayName: 'Publish Python Test Results'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'python/junit/test-results.xml'
+            condition: always()
+            continueOnError: true
+
+  - stage: Documentation
+    displayName: 'Generate Documentation (using Makefile)'
+    dependsOn: BuildAndTest
+    condition: succeeded()
+    jobs:
+      - job: GenerateDocs
+        displayName: 'Generate Documentation'
+        steps:
+          - checkout: self
+
+          - task: JavaToolInstaller@0
+            displayName: 'Install Java 17'
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+
+          - task: UsePythonVersion@0
+            displayName: 'Use Python $(PYTHON_VERSION)'
+            inputs:
+              versionSpec: '$(PYTHON_VERSION)'
+              addToPath: true
+
+          - task: GoTool@0
+            displayName: 'Use Go $(GO_VERSION)'
+            inputs:
+              version: '$(GO_VERSION)'
+
+          # Generate all documentation using Makefile
+          - script: |
+              export JAVA_HOME=$(JAVA_HOME)
+              make docs
+            displayName: 'Generate All Documentation (make docs)'
+            env:
+              JAVA_HOME: $(JAVA_HOME)
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Documentation'
+            inputs:
+              pathToPublish: '$(Pipeline.Workspace)/docs'
+              artifactName: 'documentation'
+            condition: always()
+            continueOnError: true
+
+  - stage: Publish
+    displayName: 'Publish Artifacts (using Makefile)'
+    dependsOn: BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: PublishArtifacts
+        displayName: 'Publish Build Artifacts'
+        steps:
+          - checkout: self
+
+          - task: JavaToolInstaller@0
+            displayName: 'Install Java 17'
+            inputs:
+              versionSpec: '17'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+
+          - task: UsePythonVersion@0
+            displayName: 'Use Python $(PYTHON_VERSION)'
+            inputs:
+              versionSpec: '$(PYTHON_VERSION)'
+              addToPath: true
+
+          - task: GoTool@0
+            displayName: 'Use Go $(GO_VERSION)'
+            inputs:
+              version: '$(GO_VERSION)'
+
+          # Build Java JAR using Makefile
+          - script: |
+              export JAVA_HOME=$(JAVA_HOME)
+              make java-jar
+            displayName: 'Build Java JAR (make java-jar)'
+            env:
+              JAVA_HOME: $(JAVA_HOME)
+
+          # Build Python package using Makefile
+          - script: |
+              make python-build
+            displayName: 'Build Python Package (make python-build)'
+            continueOnError: true
+
+          # Build Golang binary
+          - script: |
+              make golang-build
+            displayName: 'Build Golang (make golang-build)'
+            continueOnError: true
+
+          # Publish artifacts
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Java Artifacts'
+            inputs:
+              pathToPublish: 'java/build/libs'
+              artifactName: 'java-artifacts'
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Python Artifacts'
+            inputs:
+              pathToPublish: 'python/dist'
+              artifactName: 'python-artifacts'
+            condition: always()
+            continueOnError: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Golang Artifacts'
+            inputs:
+              pathToPublish: 'golang'
+              artifactName: 'golang-artifacts'
+            condition: always()
+            continueOnError: true
+

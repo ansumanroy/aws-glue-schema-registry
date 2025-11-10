@@ -1,0 +1,342 @@
+# GitHub Actions Workflow for AWS Glue Schema Registry
+# Uses explicit build steps (no Makefile)
+# This showcases explicit commands in CI/CD pipelines
+
+name: Build and Test (Explicit Steps)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+    paths-ignore:
+      - '*.md'
+      - '.gitignore'
+      - 'README.md'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+  GO_VERSION: '1.21'
+
+jobs:
+  java:
+    name: Build and Test Java
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x java/gradlew
+
+      - name: Debug - Verify secrets availability
+        run: |
+          echo "🔍 Checking GitHub Secrets Availability..."
+          echo ""
+          
+          # Function to mask/hash a value
+          mask_value() {
+            local value="$1"
+            if [ -z "$value" ]; then
+              echo "❌ NOT SET"
+            elif [ ${#value} -le 8 ]; then
+              echo "✅ SET (length: ${#value}) - ***"
+            else
+              local prefix="${value:0:4}"
+              local suffix="${value: -4}"
+              echo "✅ SET (length: ${#value}) - ${prefix}***${suffix}"
+            fi
+          }
+          
+          echo "📋 Secret Status:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "AWS_ACCESS_KEY_ID:     $(mask_value "$AWS_ACCESS_KEY_ID")"
+          echo "AWS_SECRET_ACCESS_KEY: $(mask_value "$AWS_SECRET_ACCESS_KEY")"
+          echo "AWS_REGION:            $(mask_value "$AWS_REGION")"
+          echo "GLUE_REGISTRY_NAME:    $(mask_value "$GLUE_REGISTRY_NAME")"
+          echo "SCHEMA_NAME_AVRO:      $(mask_value "$SCHEMA_NAME_AVRO")"
+          echo "SCHEMA_NAME_JSON:      $(mask_value "$SCHEMA_NAME_JSON")"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          
+          # Check if required secrets are set
+          missing_secrets=0
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+            echo "⚠️  WARNING: AWS_ACCESS_KEY_ID is not set"
+            missing_secrets=$((missing_secrets + 1))
+          fi
+          if [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "⚠️  WARNING: AWS_SECRET_ACCESS_KEY is not set"
+            missing_secrets=$((missing_secrets + 1))
+          fi
+          if [ -z "$AWS_REGION" ]; then
+            echo "⚠️  WARNING: AWS_REGION is not set"
+            missing_secrets=$((missing_secrets + 1))
+          fi
+          if [ -z "$GLUE_REGISTRY_NAME" ]; then
+            echo "⚠️  WARNING: GLUE_REGISTRY_NAME is not set"
+            missing_secrets=$((missing_secrets + 1))
+          fi
+          
+          echo ""
+          if [ $missing_secrets -eq 0 ]; then
+            echo "✅ All required secrets are available"
+          else
+            echo "❌ $missing_secrets required secret(s) are missing"
+            echo "   Tests may fail if AWS credentials are not available"
+          fi
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Build with Gradle
+        run: |
+          cd java
+          ./gradlew clean build --no-daemon
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Test with Gradle
+        run: |
+          cd java
+          ./gradlew test --no-daemon --rerun-tasks
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Publish Java test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: 'java/build/test-results/**/*.xml'
+          check_name: 'Java Test Results'
+
+      - name: Upload Java artifacts
+        uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          name: java-artifacts
+          path: java/build/libs/*.jar
+          retention-days: 30
+
+  python:
+    name: Build and Test Python
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Create virtual environment
+        run: |
+          cd python
+          python -m venv venv
+
+      - name: Install dependencies
+        run: |
+          cd python
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-cov
+
+      - name: Debug - Verify secrets availability (Python)
+        run: |
+          echo "🔍 Checking GitHub Secrets Availability for Python tests..."
+          echo ""
+          
+          # Function to mask/hash a value
+          mask_value() {
+            local value="$1"
+            if [ -z "$value" ]; then
+              echo "❌ NOT SET"
+            elif [ ${#value} -le 8 ]; then
+              echo "✅ SET (length: ${#value}) - ***"
+            else
+              local prefix="${value:0:4}"
+              local suffix="${value: -4}"
+              echo "✅ SET (length: ${#value}) - ${prefix}***${suffix}"
+            fi
+          }
+          
+          echo "📋 Secret Status:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "AWS_ACCESS_KEY_ID:     $(mask_value "$AWS_ACCESS_KEY_ID")"
+          echo "AWS_SECRET_ACCESS_KEY: $(mask_value "$AWS_SECRET_ACCESS_KEY")"
+          echo "AWS_REGION:            $(mask_value "$AWS_REGION")"
+          echo "GLUE_REGISTRY_NAME:    $(mask_value "$GLUE_REGISTRY_NAME")"
+          echo "SCHEMA_NAME_AVRO:      $(mask_value "$SCHEMA_NAME_AVRO")"
+          echo "SCHEMA_NAME_JSON:      $(mask_value "$SCHEMA_NAME_JSON")"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Run tests
+        run: |
+          cd python
+          source venv/bin/activate
+          mkdir -p junit
+          python -m pytest tests/ -v --junitxml=junit/test-results.xml
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Publish Python test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: 'python/junit/test-results.xml'
+          check_name: 'Python Test Results'
+
+      - name: Build Python package
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          cd python
+          source venv/bin/activate
+          pip install build wheel
+          python -m build
+
+      - name: Upload Python artifacts
+        uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          name: python-artifacts
+          path: python/dist/*
+          retention-days: 30
+
+  golang:
+    name: Build and Test Golang
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download dependencies
+        run: |
+          cd golang
+          go mod download
+
+      - name: Build
+        run: |
+          cd golang
+          go build ./...
+
+      - name: Debug - Verify secrets availability (Golang)
+        run: |
+          echo "🔍 Checking GitHub Secrets Availability for Golang tests..."
+          echo ""
+          
+          # Function to mask/hash a value
+          mask_value() {
+            local value="$1"
+            if [ -z "$value" ]; then
+              echo "❌ NOT SET"
+            elif [ ${#value} -le 8 ]; then
+              echo "✅ SET (length: ${#value}) - ***"
+            else
+              local prefix="${value:0:4}"
+              local suffix="${value: -4}"
+              echo "✅ SET (length: ${#value}) - ${prefix}***${suffix}"
+            fi
+          }
+          
+          echo "📋 Secret Status:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "AWS_ACCESS_KEY_ID:     $(mask_value "$AWS_ACCESS_KEY_ID")"
+          echo "AWS_SECRET_ACCESS_KEY: $(mask_value "$AWS_SECRET_ACCESS_KEY")"
+          echo "AWS_REGION:            $(mask_value "$AWS_REGION")"
+          echo "GLUE_REGISTRY_NAME:    $(mask_value "$GLUE_REGISTRY_NAME")"
+          echo "SCHEMA_NAME_AVRO:      $(mask_value "$SCHEMA_NAME_AVRO")"
+          echo "SCHEMA_NAME_JSON:      $(mask_value "$SCHEMA_NAME_JSON")"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Test
+        run: |
+          cd golang
+          go test ./... -v
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Upload Golang artifacts
+        uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          name: golang-artifacts
+          path: golang/
+          retention-days: 30
+

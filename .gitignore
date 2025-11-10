@@ -48,6 +48,9 @@ gradle-app.setting
 !gradlew.bat
 gradle-wrapper.jar.sha256
 .gradletasknamecache
+# Java documentation (specific paths since build/ is ignored)
+java/build/docs/
+java/target/docs/
 
 # Generated sources
 generated/
@@ -156,3 +159,51 @@ htmlcov/
 .env.local
 .env.*.local
 *.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+# Virtual environments (project-specific)
+python/venv/
+python/env/
+python/.venv/
+# Python documentation
+python/docs/html/
+python/*.html
+python/docs/_build/
+
+# Golang
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+vendor/
+# Golang documentation
+golang/docs/html/
+golang/docs/go-doc.txt
+
+# Release artifacts (generated during release process)
+release-artifacts/
