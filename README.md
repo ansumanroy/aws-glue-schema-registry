@@ -290,6 +290,30 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 For detailed instructions, see [MULESOFT_EXCHANGE.md](MULESOFT_EXCHANGE.md).
 
+## Creating Releases
+
+To create a GitHub release with artifacts and documentation:
+
+### Linux/macOS
+
+```bash
+# Create release version 1.0.0
+make release VERSION=1.0.0
+
+# Or using script directly
+./scripts/create-release.sh --version 1.0.0
+```
+
+### Windows (PowerShell)
+
+```powershell
+.\scripts\create-release.ps1 -Version 1.0.0
+```
+
+**Prerequisites**: GitHub CLI (`gh`) must be installed and authenticated.
+
+For detailed instructions, see [RELEASE.md](RELEASE.md).
+
 ## License
 
 See [LICENSE](LICENSE) file for details.

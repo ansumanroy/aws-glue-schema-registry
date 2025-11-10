@@ -1,4 +1,4 @@
-.PHONY: help build test clean java-build java-test java-clean java-jar java-jar-fat java-jar-fat-gradle java-jar-fat-maven java-build-maven java-test-maven java-clean-maven java-jar-maven java-javadoc java-javadoc-gradle java-javadoc-maven java-publish-exchange python-venv python-build python-test python-clean python-install python-install-dev python-install-package python-docs golang-build golang-test golang-clean golang-install golang-docs check-gradle check-maven check-java check-python check-go setup info docs
+.PHONY: help build test clean java-build java-test java-clean java-jar java-jar-fat java-jar-fat-gradle java-jar-fat-maven java-build-maven java-test-maven java-clean-maven java-jar-maven java-javadoc java-javadoc-gradle java-javadoc-maven java-publish-exchange release python-venv python-build python-test python-clean python-install python-install-dev python-install-package python-docs golang-build golang-test golang-clean golang-install golang-docs check-gradle check-maven check-java check-python check-go setup info docs
 
 # Default target
 .DEFAULT_GOAL := help

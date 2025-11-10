@@ -204,3 +204,6 @@ vendor/
 # Golang documentation
 golang/docs/html/
 golang/docs/go-doc.txt
+
+# Release artifacts (generated during release process)
+release-artifacts/
