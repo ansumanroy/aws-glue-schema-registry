@@ -1,26 +1,23 @@
 # GitHub Actions Workflow for AWS Glue Schema Registry
 # Uses explicit build steps (no Makefile)
 # This showcases explicit commands in CI/CD pipelines
-#
-# DISABLED: Temporarily disabled - using build-simple.yml instead
-# To re-enable: Uncomment the 'on:' section below
 
 name: Build and Test (Explicit Steps)
 
-# on:
-#   push:
-#     branches:
-#       - main
-#       - develop
-#       - 'feature/**'
-#     paths-ignore:
-#       - '*.md'
-#       - '.gitignore'
-#       - 'README.md'
-#   pull_request:
-#     branches:
-#       - main
-#       - develop
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+    paths-ignore:
+      - '*.md'
+      - '.gitignore'
+      - 'README.md'
+  pull_request:
+    branches:
+      - main
+      - develop
 
 env:
   JAVA_VERSION: '17'
@@ -31,6 +28,11 @@ jobs:
   java:
     name: Build and Test Java
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
     
     steps:
       - name: Checkout code
@@ -114,6 +116,13 @@ jobs:
         run: |
           cd java
           ./gradlew clean build --no-daemon
+        env:
+          GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
+          SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
 
       - name: Test with Gradle
         run: |
@@ -145,6 +154,11 @@ jobs:
   python:
     name: Build and Test Python
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
     
     steps:
       - name: Checkout code
@@ -245,6 +259,11 @@ jobs:
   golang:
     name: Build and Test Golang
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      issues: write
     
     steps:
       - name: Checkout code
