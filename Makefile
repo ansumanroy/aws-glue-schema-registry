@@ -1,4 +1,4 @@
-.PHONY: help build test clean java-build java-test java-clean java-jar java-build-maven java-test-maven java-clean-maven java-jar-maven java-javadoc java-javadoc-gradle java-javadoc-maven python-venv python-build python-test python-clean python-install python-install-dev python-install-package python-docs golang-build golang-test golang-clean golang-install golang-docs check-gradle check-maven check-java check-python check-go setup info docs
+.PHONY: help build test clean java-build java-test java-clean java-jar java-jar-fat java-jar-fat-gradle java-jar-fat-maven java-build-maven java-test-maven java-clean-maven java-jar-maven java-javadoc java-javadoc-gradle java-javadoc-maven java-publish-exchange python-venv python-build python-test python-clean python-install python-install-dev python-install-package python-docs golang-build golang-test golang-clean golang-install golang-docs check-gradle check-maven check-java check-python check-go setup info docs
 
 # Default target
 .DEFAULT_GOAL := help
@@ -62,6 +62,14 @@ java-jar-gradle: java-build-gradle ## Build Java JAR file using Gradle
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew jar --no-daemon
 	@echo "$(COLOR_GREEN)JAR created: $(JAVA_DIR)/build/libs/schema-registry-client-1.0.0-SNAPSHOT.jar$(COLOR_RESET)"
 
+java-jar-fat-gradle: java-build-gradle ## Build Java fat JAR (with all dependencies) using Gradle
+	@echo "$(COLOR_BLUE)Building fat JAR with Gradle...$(COLOR_RESET)"
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
+	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME ./gradlew shadowJar --no-daemon
+	@echo "$(COLOR_GREEN)Fat JAR created: $(JAVA_DIR)/build/libs/schema-registry-client-1.0.0-SNAPSHOT-all.jar$(COLOR_RESET)"
+
 java-build-maven: check-maven check-java ## Build Java project using Maven
 	@echo "$(COLOR_BLUE)Building Java project with Maven...$(COLOR_RESET)"
 	@if [ -z "$$JAVA_HOME" ]; then \
@@ -91,10 +99,19 @@ java-jar-maven: java-build-maven ## Build Java JAR file using Maven
 	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn package -DskipTests
 	@echo "$(COLOR_GREEN)JAR created: $(JAVA_DIR)/target/schema-registry-client-1.0.0-SNAPSHOT.jar$(COLOR_RESET)"
 
+java-jar-fat-maven: java-build-maven ## Build Java fat JAR (with all dependencies) using Maven
+	@echo "$(COLOR_BLUE)Building fat JAR with Maven...$(COLOR_RESET)"
+	@if [ -z "$$JAVA_HOME" ]; then \
+		JAVA_HOME=$$(/usr/libexec/java_home -v 17 2>/dev/null || echo ""); \
+	fi; \
+	cd $(JAVA_DIR) && JAVA_HOME=$$JAVA_HOME mvn package -DskipTests
+	@echo "$(COLOR_GREEN)Fat JAR created: $(JAVA_DIR)/target/schema-registry-client-1.0.0-SNAPSHOT-all.jar$(COLOR_RESET)"
+
 java-build: java-build-gradle ## Build Java project (default: Gradle)
 java-test: java-test-gradle ## Run Java tests (default: Gradle)
 java-clean: java-clean-gradle ## Clean Java build artifacts (default: Gradle)
 java-jar: java-jar-gradle ## Build Java JAR file (default: Gradle)
+java-jar-fat: java-jar-fat-gradle ## Build Java fat JAR with all dependencies (default: Gradle)
 
 java-javadoc-gradle: check-gradle check-java ## Generate Java Javadoc using Gradle
 	@echo "$(COLOR_BLUE)Generating Javadoc with Gradle...$(COLOR_RESET)"
@@ -113,6 +130,18 @@ java-javadoc-maven: check-maven check-java ## Generate Java Javadoc using Maven
 	@echo "$(COLOR_GREEN)Javadoc generated: $(JAVA_DIR)/target/docs/javadoc/index.html$(COLOR_RESET)"
 
 java-javadoc: java-javadoc-gradle ## Generate Java Javadoc (default: Gradle)
+
+java-publish-exchange: check-java ## Publish Java library to MuleSoft Exchange (requires VERSION variable)
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(COLOR_RED)Error: VERSION is required. Usage: make java-publish-exchange VERSION=1.0.0$(COLOR_RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(COLOR_BLUE)Publishing to MuleSoft Exchange...$(COLOR_RESET)"
+	@if [ -z "$$ANYPOINT_USERNAME" ] || [ -z "$$ANYPOINT_PASSWORD" ]; then \
+		echo "$(COLOR_YELLOW)Warning: ANYPOINT_USERNAME and ANYPOINT_PASSWORD environment variables are required$(COLOR_RESET)"; \
+		echo "$(COLOR_YELLOW)Set them before running: export ANYPOINT_USERNAME=your-username && export ANYPOINT_PASSWORD=your-password$(COLOR_RESET)"; \
+	fi
+	@$(SCRIPT_DIR)/publish-mulesoft-exchange.sh --version $(VERSION) --build-system maven
 
 ##@ Python Build
 
@@ -341,6 +370,6 @@ info: ## Display project information
 	fi
 	@echo ""
 	@echo "$(COLOR_BOLD)Build System Options:$(COLOR_RESET)"
-	@echo "  Gradle: make java-build-gradle, make java-test-gradle, make java-jar-gradle"
-	@echo "  Maven:  make java-build-maven, make java-test-maven, make java-jar-maven"
+	@echo "  Gradle: make java-build-gradle, make java-test-gradle, make java-jar-gradle, make java-jar-fat-gradle"
+	@echo "  Maven:  make java-build-maven, make java-test-maven, make java-jar-maven, make java-jar-fat-maven"
 	@echo "  Default: make java-build (uses Gradle)"

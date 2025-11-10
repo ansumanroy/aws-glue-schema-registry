@@ -253,6 +253,24 @@ serialized, _ := avroSerializer.Serialize(c, "SalesforceAudit", event)
 deserialized, _ := avroSerializer.Deserialize(c, "SalesforceAudit", serialized)
 ```
 
+## Publishing to MuleSoft Exchange
+
+This project can be published to MuleSoft Exchange for easy integration into MuleSoft applications.
+
+### Quick Start
+
+```bash
+# Set Anypoint Platform credentials
+export ANYPOINT_USERNAME=your-username
+export ANYPOINT_PASSWORD=your-password
+export ANYPOINT_ORG_ID=your-org-id
+
+# Publish version 1.0.0
+make java-publish-exchange VERSION=1.0.0
+```
+
+For detailed instructions, see [MULESOFT_EXCHANGE.md](MULESOFT_EXCHANGE.md).
+
 ## License
 
 See [LICENSE](LICENSE) file for details.

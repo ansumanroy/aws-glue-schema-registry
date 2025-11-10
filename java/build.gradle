@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'com.github.davidmc24.gradle.plugin.avro' version '1.7.0'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = 'com.aws.glue'
@@ -159,3 +160,36 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
     description = 'Creates a JAR file containing the Javadoc API documentation'
 }
+
+// Shadow JAR (Fat JAR) configuration
+shadowJar {
+    archiveClassifier.set('all')
+    archiveBaseName.set('schema-registry-client')
+    archiveVersion.set(project.version.toString())
+    
+    manifest {
+        attributes(
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': 'AWS Glue Schema Registry',
+            'Main-Class': '' // No main class - this is a library
+        )
+    }
+    
+    // Exclude signature files to avoid conflicts
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    
+    // Merge service files
+    mergeServiceFiles()
+    
+    // Relocate common packages to avoid conflicts
+    // Uncomment if you encounter classpath conflicts
+    // relocate 'org.apache.commons', 'com.aws.glue.shaded.org.apache.commons'
+    
+    description = 'Creates a fat JAR with all dependencies included'
+}
+
+// Make shadowJar depend on jar task
+tasks.shadowJar.dependsOn jar

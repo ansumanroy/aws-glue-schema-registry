@@ -46,10 +46,15 @@ mvn test
 # Build JAR
 mvn package
 
+# Build fat JAR (with all dependencies)
+mvn package
+# Fat JAR will be created as: target/schema-registry-client-1.0.0-SNAPSHOT-all.jar
+
 # Or using Makefile
 make java-build-maven
 make java-test-maven
 make java-jar-maven
+make java-jar-fat-maven
 ```
 
 ## Quick Start
@@ -79,6 +84,62 @@ byte[] serialized = AvroSerializer.serialize(
 // Deserialize
 SalesforceAudit deserialized = AvroSerializer.deserialize(
     client, "SalesforceAudit", serialized);
+```
+
+## Building JAR Files
+
+### Standard JAR (without dependencies)
+
+A standard JAR contains only your compiled classes. Dependencies must be on the classpath at runtime.
+
+#### Using Gradle
+```bash
+./gradlew jar
+# Or
+make java-jar-gradle
+# Output: build/libs/schema-registry-client-1.0.0-SNAPSHOT.jar
+```
+
+#### Using Maven
+```bash
+mvn package
+# Or
+make java-jar-maven
+# Output: target/schema-registry-client-1.0.0-SNAPSHOT.jar
+```
+
+### Fat JAR (with all dependencies)
+
+A fat JAR (also called "uber JAR" or "shaded JAR") includes all dependencies packaged into a single JAR file. This is useful for standalone deployments where you don't want to manage multiple JAR files.
+
+#### Using Gradle
+```bash
+./gradlew shadowJar
+# Or
+make java-jar-fat-gradle
+# Output: build/libs/schema-registry-client-1.0.0-SNAPSHOT-all.jar
+```
+
+#### Using Maven
+```bash
+mvn package
+# Or
+make java-jar-fat-maven
+# Output: target/schema-registry-client-1.0.0-SNAPSHOT-all.jar
+```
+
+**Note**: The fat JAR is automatically created when you run `mvn package` due to the Maven Shade plugin configuration.
+
+### Using Fat JAR
+
+Once built, you can use the fat JAR in your project:
+
+```bash
+# Add to classpath
+java -cp schema-registry-client-1.0.0-SNAPSHOT-all.jar YourMainClass
+
+# Or use as a dependency in another project
+# (though standard JAR is preferred for Maven/Gradle projects)
 ```
 
 ## Running Tests
@@ -217,6 +278,22 @@ AWS credentials can be configured via:
 2. AWS credential chain (IAM roles, credential files, etc.)
 3. MuleSoft secure properties (in MuleSoft environment)
 4. Explicit configuration (programmatic)
+
+## Publishing to MuleSoft Exchange
+
+To publish this library to MuleSoft Exchange:
+
+```bash
+# Set Anypoint Platform credentials
+export ANYPOINT_USERNAME=your-username
+export ANYPOINT_PASSWORD=your-password
+export ANYPOINT_ORG_ID=your-org-id
+
+# Publish version 1.0.0
+make java-publish-exchange VERSION=1.0.0
+```
+
+For detailed instructions, see [MULESOFT_EXCHANGE.md](../MULESOFT_EXCHANGE.md).
 
 ## Examples
 
