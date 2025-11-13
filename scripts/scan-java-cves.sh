@@ -23,6 +23,28 @@ mkdir -p "$REPORTS_DIR"
 echo -e "${COLOR_BOLD}${COLOR_BLUE}=== Scanning Java Dependencies for CVEs ===${COLOR_RESET}"
 echo ""
 
+# Check for NVD API Key
+if [ -z "$NVD_API_KEY" ]; then
+    echo -e "${COLOR_YELLOW}Warning: NVD_API_KEY environment variable is not set.${COLOR_RESET}"
+    echo -e "${COLOR_YELLOW}The NVD API now requires an API key for access.${COLOR_RESET}"
+    echo -e "${COLOR_YELLOW}Without an API key, the scan may fail or take a very long time.${COLOR_RESET}"
+    echo -e "${COLOR_BLUE}To get an API key:${COLOR_RESET}"
+    echo -e "${COLOR_BLUE}  1. Visit: https://nvd.nist.gov/developers/request-an-api-key${COLOR_RESET}"
+    echo -e "${COLOR_BLUE}  2. Request a free API key${COLOR_RESET}"
+    echo -e "${COLOR_BLUE}  3. Set it: export NVD_API_KEY=your-key-here${COLOR_RESET}"
+    echo ""
+    read -p "Continue without API key? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${COLOR_YELLOW}Scan cancelled. Please set NVD_API_KEY and try again.${COLOR_RESET}"
+        exit 0
+    fi
+    echo ""
+else
+    echo -e "${COLOR_GREEN}✓ NVD API Key found${COLOR_RESET}"
+    echo ""
+fi
+
 # Check if Java is available
 if ! command -v java &> /dev/null; then
     echo -e "${COLOR_RED}Error: Java is not installed${COLOR_RESET}"
@@ -45,9 +67,19 @@ if [ -f "gradlew" ]; then
         export JAVA_HOME
     fi
     
-    # Run dependency check
+    # Run dependency check (export NVD_API_KEY if set)
+    if [ -n "$NVD_API_KEY" ]; then
+        export NVD_API_KEY
+    fi
     ./gradlew dependencyCheckAnalyze --no-daemon || {
-        echo -e "${COLOR_YELLOW}Warning: Dependency check completed with issues. Check reports for details.${COLOR_RESET}"
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -ne 0 ]; then
+            echo -e "${COLOR_YELLOW}Warning: Dependency check completed with issues (exit code: $EXIT_CODE)${COLOR_RESET}"
+            if [ -z "$NVD_API_KEY" ]; then
+                echo -e "${COLOR_YELLOW}This may be due to missing NVD API key. Consider setting NVD_API_KEY environment variable.${COLOR_RESET}"
+            fi
+            echo -e "${COLOR_YELLOW}Check reports for details.${COLOR_RESET}"
+        fi
     }
     
     # Copy reports
@@ -72,9 +104,19 @@ if [ -f "pom.xml" ]; then
             export JAVA_HOME
         fi
         
-        # Run dependency check
+        # Run dependency check (export NVD_API_KEY if set)
+        if [ -n "$NVD_API_KEY" ]; then
+            export NVD_API_KEY
+        fi
         mvn dependency-check:check || {
-            echo -e "${COLOR_YELLOW}Warning: Dependency check completed with issues. Check reports for details.${COLOR_RESET}"
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -ne 0 ]; then
+                echo -e "${COLOR_YELLOW}Warning: Dependency check completed with issues (exit code: $EXIT_CODE)${COLOR_RESET}"
+                if [ -z "$NVD_API_KEY" ]; then
+                    echo -e "${COLOR_YELLOW}This may be due to missing NVD API key. Consider setting NVD_API_KEY environment variable.${COLOR_RESET}"
+                fi
+                echo -e "${COLOR_YELLOW}Check reports for details.${COLOR_RESET}"
+            fi
         }
         
         # Copy reports

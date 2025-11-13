@@ -355,9 +355,16 @@ Scan reports are generated in the `reports/` directory:
 - OWASP Dependency-Check is configured in `java/build.gradle` and `java/pom.xml`
 - Build fails if CVSS score >= 7.0 (configurable)
 - Suppression file: `java/dependency-check-suppressions.xml` (for false positives)
+- **NVD API Key Required**: The NVD API now requires an API key. Get one free at [https://nvd.nist.gov/developers/request-an-api-key](https://nvd.nist.gov/developers/request-an-api-key)
+  ```bash
+  export NVD_API_KEY=your-api-key-here
+  ```
 
 **Running manually:**
 ```bash
+# Set NVD API key (recommended)
+export NVD_API_KEY=your-api-key-here
+
 # Gradle
 cd java && ./gradlew dependencyCheckAnalyze
 

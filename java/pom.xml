@@ -272,7 +272,7 @@
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-                <version>9.0.9</version>
+                <version>9.0.10</version>
                 <configuration>
                     <failBuildOnCVSS>7.0</failBuildOnCVSS>
                     <suppressionFiles>
@@ -287,6 +287,11 @@
                     <autoUpdate>true</autoUpdate>
                     <dataDirectory>${user.home}/.m2/dependency-check-data</dataDirectory>
                     <knownExploitedEnabled>true</knownExploitedEnabled>
+                    <!-- NVD API Key (highly recommended - get from https://nvd.nist.gov/developers/request-an-api-key) -->
+                    <!-- Set via environment variable: export NVD_API_KEY=your-key-here -->
+                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+                    <!-- Wait time between API calls (in milliseconds) - helps with rate limiting -->
+                    <nvdApiDelay>6500</nvdApiDelay>
                 </configuration>
                 <executions>
                     <execution>
