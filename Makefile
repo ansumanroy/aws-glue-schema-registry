@@ -277,6 +277,31 @@ clean: java-clean python-clean golang-clean ## Clean all build artifacts
 	@rm -rf release-artifacts/
 	@echo "$(COLOR_GREEN)✓ All artifacts cleaned$(COLOR_RESET)"
 
+release: ## Create a GitHub release (requires VERSION variable, e.g., make release VERSION=1.0.0)
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(COLOR_RED)Error: VERSION is required. Usage: make release VERSION=1.0.0$(COLOR_RESET)"; \
+		echo "$(COLOR_YELLOW)Optional: DRAFT=true, PRERELEASE=true, NOTES=<file or text>$(COLOR_RESET)"; \
+		exit 1; \
+	fi
+	@REMOTE_URL=$$(git remote -v | grep "^origin" | head -1); \
+	GITHUB_REPO=$$(echo "$$REMOTE_URL" | sed -E 's/.*github\.com[:/]([^/]+\/[^/]+)\.git.*/\1/' || echo "$$REMOTE_URL" | sed -E 's/.*github\.com[:/]([^/]+\/[^/]+).*/\1/'); \
+	if [ -z "$$GITHUB_REPO" ]; then \
+		echo "$(COLOR_RED)Error: Could not determine GitHub repository from git remote$(COLOR_RESET)"; \
+		echo "$(COLOR_YELLOW)Set GITHUB_REPO environment variable (format: owner/repo)$(COLOR_RESET)"; \
+		exit 1; \
+	fi; \
+	RELEASE_ARGS="--version $(VERSION)"; \
+	if [ "$(DRAFT)" = "true" ]; then \
+		RELEASE_ARGS="$$RELEASE_ARGS --draft"; \
+	fi; \
+	if [ "$(PRERELEASE)" = "true" ]; then \
+		RELEASE_ARGS="$$RELEASE_ARGS --prerelease"; \
+	fi; \
+	if [ -n "$(NOTES)" ]; then \
+		RELEASE_ARGS="$$RELEASE_ARGS --notes $(NOTES)"; \
+	fi; \
+	GITHUB_REPO=$$GITHUB_REPO scripts/create-release.sh $$RELEASE_ARGS
+
 ##@ Prerequisites
 
 check-gradle: ## Check if Gradle wrapper is available

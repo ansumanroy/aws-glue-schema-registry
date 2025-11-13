@@ -1,5 +1,7 @@
 package com.aws.glue.schema.registry.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
@@ -12,6 +14,8 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  * hard dependencies when used in non-MuleSoft environments.
  */
 public class MuleSoftConfigProvider {
+    
+    private static final Logger logger = LoggerFactory.getLogger(MuleSoftConfigProvider.class);
     
     private static final String MULE_CONFIG_PROPERTY_PREFIX = "mule.app.";
     private static final String MULE_SECURE_PROPERTY_PREFIX = "secure::";
@@ -28,10 +32,16 @@ public class MuleSoftConfigProvider {
             String registryNameProperty, 
             String regionProperty) {
         
+        logger.debug("Loading configuration from MuleSoft properties - registryProperty: {}, regionProperty: {}", 
+                registryNameProperty, regionProperty);
+        
         String registryName = getMuleSoftProperty(registryNameProperty, "glue-schema-registry");
         String regionName = getMuleSoftProperty(regionProperty, "us-east-1");
         String accessKey = getMuleSoftProperty("aws.access.key.id", null);
         String secretKey = getMuleSoftProperty("aws.secret.access.key", null);
+        
+        logger.debug("Resolved configuration - registry: {}, region: {}, credentials provided: {}", 
+                registryName, regionName, (accessKey != null && secretKey != null));
         
         GlueSchemaRegistryConfig.Builder builder = GlueSchemaRegistryConfig.builder()
             .registryName(registryName)
@@ -39,13 +49,18 @@ public class MuleSoftConfigProvider {
         
         // If credentials are provided, use them
         if (accessKey != null && secretKey != null) {
+            logger.debug("Using provided AWS credentials");
             AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
             builder.credentialsProvider(StaticCredentialsProvider.create(credentials));
             // Note: Session tokens would need to be handled via AwsSessionCredentials if needed
             // For now, we use basic credentials. Session token support can be added later.
+        } else {
+            logger.debug("No credentials provided, using default credentials provider");
         }
         
-        return builder.build();
+        GlueSchemaRegistryConfig config = builder.build();
+        logger.info("Configuration loaded successfully - registry: {}, region: {}", registryName, regionName);
+        return config;
     }
     
     /**
@@ -70,10 +85,13 @@ public class MuleSoftConfigProvider {
      * @return Property value or defaultValue
      */
     private static String getMuleSoftProperty(String propertyKey, String defaultValue) {
+        logger.trace("Resolving property: {}", propertyKey);
+        
         // Try MuleSoft secure properties first
         String secureKey = MULE_SECURE_PROPERTY_PREFIX + propertyKey;
         String value = getMuleSoftPropertyValue(secureKey);
         if (value != null) {
+            logger.debug("Found property {} in MuleSoft secure properties", propertyKey);
             return value;
         }
         
@@ -81,12 +99,14 @@ public class MuleSoftConfigProvider {
         String appKey = MULE_CONFIG_PROPERTY_PREFIX + propertyKey;
         value = getMuleSoftPropertyValue(appKey);
         if (value != null) {
+            logger.debug("Found property {} in MuleSoft application properties", propertyKey);
             return value;
         }
         
         // Try system property
         value = System.getProperty(propertyKey);
         if (value != null) {
+            logger.debug("Found property {} in system properties", propertyKey);
             return value;
         }
         
@@ -94,15 +114,18 @@ public class MuleSoftConfigProvider {
         String envKey = propertyKey.toUpperCase().replace('.', '_');
         value = System.getenv(envKey);
         if (value != null) {
+            logger.debug("Found property {} in environment variable {}", propertyKey, envKey);
             return value;
         }
         
         // Try direct environment variable
         value = System.getenv(propertyKey);
         if (value != null) {
+            logger.debug("Found property {} in environment variable (direct)", propertyKey);
             return value;
         }
         
+        logger.debug("Property {} not found, using default value: {}", propertyKey, defaultValue);
         return defaultValue;
     }
     
@@ -118,6 +141,7 @@ public class MuleSoftConfigProvider {
             // Try to get from MuleSoft's configuration system via reflection
             // This is a fallback that won't break if MuleSoft classes aren't available
             Class.forName("org.mule.runtime.config.api.dsl.model.properties.ConfigurationPropertiesProvider");
+            logger.trace("MuleSoft configuration classes found, attempting to get property: {}", propertyKey);
             Object configProvider = getMuleSoftConfigProvider();
             if (configProvider != null) {
                 // Use reflection to call getProperty method
@@ -125,14 +149,17 @@ public class MuleSoftConfigProvider {
                     .getMethod("getProperty", String.class);
                 Object result = getPropertyMethod.invoke(configProvider, propertyKey);
                 if (result != null) {
+                    logger.trace("Retrieved property {} from MuleSoft configuration provider", propertyKey);
                     return result.toString();
                 }
             }
         } catch (ClassNotFoundException e) {
             // MuleSoft classes not available - this is expected in standalone mode
+            logger.trace("MuleSoft classes not available (expected in standalone mode)");
             return null;
         } catch (Exception e) {
             // Reflection failed - fall back to other methods
+            logger.debug("Failed to get property {} from MuleSoft configuration: {}", propertyKey, e.getMessage());
             return null;
         }
         return null;
@@ -162,8 +189,10 @@ public class MuleSoftConfigProvider {
     public static boolean isMuleSoftEnvironment() {
         try {
             Class.forName("org.mule.runtime.api.MuleContext");
+            logger.debug("MuleSoft environment detected");
             return true;
         } catch (ClassNotFoundException e) {
+            logger.debug("Not running in MuleSoft environment (MuleContext class not found)");
             return false;
         }
     }

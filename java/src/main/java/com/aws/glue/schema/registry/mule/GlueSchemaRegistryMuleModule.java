@@ -7,6 +7,8 @@ import com.aws.glue.schema.registry.config.MuleSoftConfigProvider;
 import com.aws.glue.schema.registry.implementation.AvroSerializer;
 import com.aws.glue.schema.registry.implementation.JsonSerializer;
 import com.aws.glue.schema.registry.implementation.model.SalesforceAudit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MuleSoft module wrapper for Glue Schema Registry operations.
@@ -19,6 +21,8 @@ import com.aws.glue.schema.registry.implementation.model.SalesforceAudit;
  */
 public class GlueSchemaRegistryMuleModule {
     
+    private static final Logger logger = LoggerFactory.getLogger(GlueSchemaRegistryMuleModule.class);
+    
     private final GlueSchemaRegistryClient client;
     
     /**
@@ -28,8 +32,11 @@ public class GlueSchemaRegistryMuleModule {
      * @return GlueSchemaRegistryMuleModule instance
      */
     public static GlueSchemaRegistryMuleModule create() {
+        logger.debug("Creating GlueSchemaRegistryMuleModule from MuleSoft properties");
         GlueSchemaRegistryConfig config = MuleSoftConfigProvider.fromMuleSoftProperties();
-        return new GlueSchemaRegistryMuleModule(config);
+        GlueSchemaRegistryMuleModule module = new GlueSchemaRegistryMuleModule(config);
+        logger.info("GlueSchemaRegistryMuleModule created with registry: {}", config.getRegistryName());
+        return module;
     }
     
     /**
@@ -39,7 +46,10 @@ public class GlueSchemaRegistryMuleModule {
      * @return GlueSchemaRegistryMuleModule instance
      */
     public static GlueSchemaRegistryMuleModule create(GlueSchemaRegistryConfig config) {
-        return new GlueSchemaRegistryMuleModule(config);
+        logger.debug("Creating GlueSchemaRegistryMuleModule with explicit configuration");
+        GlueSchemaRegistryMuleModule module = new GlueSchemaRegistryMuleModule(config);
+        logger.info("GlueSchemaRegistryMuleModule created with registry: {}", config.getRegistryName());
+        return module;
     }
     
     /**
@@ -49,13 +59,18 @@ public class GlueSchemaRegistryMuleModule {
      * @return GlueSchemaRegistryMuleModule instance
      */
     public static GlueSchemaRegistryMuleModule create(GlueSchemaRegistryClient client) {
-        return new GlueSchemaRegistryMuleModule(client);
+        logger.debug("Creating GlueSchemaRegistryMuleModule with existing client");
+        GlueSchemaRegistryMuleModule module = new GlueSchemaRegistryMuleModule(client);
+        logger.info("GlueSchemaRegistryMuleModule created with existing client");
+        return module;
     }
     
     /**
      * Private constructor using configuration.
      */
     private GlueSchemaRegistryMuleModule(GlueSchemaRegistryConfig config) {
+        logger.debug("Initializing GlueSchemaRegistryMuleModule with config - registry: {}, region: {}", 
+                config.getRegistryName(), config.getRegion());
         this.client = new GlueSchemaRegistryClient(config);
     }
     
@@ -63,6 +78,7 @@ public class GlueSchemaRegistryMuleModule {
      * Private constructor using client.
      */
     private GlueSchemaRegistryMuleModule(GlueSchemaRegistryClient client) {
+        logger.debug("Initializing GlueSchemaRegistryMuleModule with existing client");
         this.client = client;
     }
     
@@ -75,9 +91,16 @@ public class GlueSchemaRegistryMuleModule {
      * @throws RuntimeException MuleSoft-compatible exception if serialization fails
      */
     public byte[] serializeAvro(String schemaName, SalesforceAudit auditEvent) {
+        logger.debug("Serializing SalesforceAudit to Avro format - schema: {}, eventId: {}", 
+                schemaName, auditEvent != null ? auditEvent.getEventId() : "null");
         try {
-            return AvroSerializer.serialize(client, schemaName, auditEvent);
+            byte[] result = AvroSerializer.serialize(client, schemaName, auditEvent);
+            logger.info("Successfully serialized SalesforceAudit to Avro - schema: {}, size: {} bytes", 
+                    schemaName, result.length);
+            return result;
         } catch (SchemaRegistryException e) {
+            logger.error("Failed to serialize SalesforceAudit to Avro - schema: {}, error: {}", 
+                    schemaName, e.getMessage(), e);
             throw e.toMuleSoftException();
         }
     }
@@ -91,9 +114,16 @@ public class GlueSchemaRegistryMuleModule {
      * @throws RuntimeException MuleSoft-compatible exception if deserialization fails
      */
     public SalesforceAudit deserializeAvro(String schemaName, byte[] data) {
+        logger.debug("Deserializing Avro data to SalesforceAudit - schema: {}, data size: {} bytes", 
+                schemaName, data != null ? data.length : 0);
         try {
-            return AvroSerializer.deserialize(client, schemaName, data);
+            SalesforceAudit result = AvroSerializer.deserialize(client, schemaName, data);
+            logger.info("Successfully deserialized Avro data to SalesforceAudit - schema: {}, eventId: {}", 
+                    schemaName, result != null ? result.getEventId() : "null");
+            return result;
         } catch (SchemaRegistryException e) {
+            logger.error("Failed to deserialize Avro data to SalesforceAudit - schema: {}, error: {}", 
+                    schemaName, e.getMessage(), e);
             throw e.toMuleSoftException();
         }
     }
@@ -107,9 +137,16 @@ public class GlueSchemaRegistryMuleModule {
      * @throws RuntimeException MuleSoft-compatible exception if serialization fails
      */
     public byte[] serializeJson(String schemaName, SalesforceAudit auditEvent) {
+        logger.debug("Serializing SalesforceAudit to JSON format - schema: {}, eventId: {}", 
+                schemaName, auditEvent != null ? auditEvent.getEventId() : "null");
         try {
-            return JsonSerializer.serialize(client, schemaName, auditEvent);
+            byte[] result = JsonSerializer.serialize(client, schemaName, auditEvent);
+            logger.info("Successfully serialized SalesforceAudit to JSON - schema: {}, size: {} bytes", 
+                    schemaName, result.length);
+            return result;
         } catch (SchemaRegistryException e) {
+            logger.error("Failed to serialize SalesforceAudit to JSON - schema: {}, error: {}", 
+                    schemaName, e.getMessage(), e);
             throw e.toMuleSoftException();
         }
     }
@@ -123,9 +160,61 @@ public class GlueSchemaRegistryMuleModule {
      * @throws RuntimeException MuleSoft-compatible exception if deserialization fails
      */
     public SalesforceAudit deserializeJson(String schemaName, byte[] data) {
+        logger.debug("Deserializing JSON data to SalesforceAudit - schema: {}, data size: {} bytes", 
+                schemaName, data != null ? data.length : 0);
         try {
-            return JsonSerializer.deserialize(client, schemaName, data);
+            SalesforceAudit result = JsonSerializer.deserialize(client, schemaName, data);
+            logger.info("Successfully deserialized JSON data to SalesforceAudit - schema: {}, eventId: {}", 
+                    schemaName, result != null ? result.getEventId() : "null");
+            return result;
         } catch (SchemaRegistryException e) {
+            logger.error("Failed to deserialize JSON data to SalesforceAudit - schema: {}, error: {}", 
+                    schemaName, e.getMessage(), e);
+            throw e.toMuleSoftException();
+        }
+    }
+    
+    /**
+     * Converts a JSON string to a SalesforceAudit object.
+     * This is a utility method that does not require schema registry access.
+     * Useful for converting JSON payloads directly to audit objects.
+     * 
+     * @param jsonString JSON string representation of SalesforceAudit
+     * @return Deserialized SalesforceAudit object
+     * @throws RuntimeException MuleSoft-compatible exception if conversion fails
+     */
+    public SalesforceAudit fromJsonString(String jsonString) {
+        logger.debug("Converting JSON string to SalesforceAudit via utility method");
+        try {
+            SalesforceAudit result = JsonSerializer.fromJsonString(jsonString);
+            logger.info("Successfully converted JSON string to SalesforceAudit - eventId: {}", 
+                    result != null ? result.getEventId() : "null");
+            return result;
+        } catch (SchemaRegistryException e) {
+            logger.error("Failed to convert JSON string to SalesforceAudit - error: {}", e.getMessage(), e);
+            throw e.toMuleSoftException();
+        }
+    }
+    
+    /**
+     * Converts a JSON byte array to a SalesforceAudit object.
+     * This is a utility method that does not require schema registry access.
+     * Useful for converting JSON payloads directly to audit objects.
+     * 
+     * @param jsonBytes JSON byte array representation of SalesforceAudit
+     * @return Deserialized SalesforceAudit object
+     * @throws RuntimeException MuleSoft-compatible exception if conversion fails
+     */
+    public SalesforceAudit fromJsonBytes(byte[] jsonBytes) {
+        logger.debug("Converting JSON bytes to SalesforceAudit via utility method - size: {} bytes", 
+                jsonBytes != null ? jsonBytes.length : 0);
+        try {
+            SalesforceAudit result = JsonSerializer.fromJsonBytes(jsonBytes);
+            logger.info("Successfully converted JSON bytes to SalesforceAudit - eventId: {}", 
+                    result != null ? result.getEventId() : "null");
+            return result;
+        } catch (SchemaRegistryException e) {
+            logger.error("Failed to convert JSON bytes to SalesforceAudit - error: {}", e.getMessage(), e);
             throw e.toMuleSoftException();
         }
     }
@@ -145,8 +234,10 @@ public class GlueSchemaRegistryMuleModule {
      * but this method is provided for future compatibility.
      */
     public void close() {
+        logger.debug("Closing GlueSchemaRegistryMuleModule");
         // AWS SDK v2 clients don't need explicit closing in most cases
         // This method is provided for API consistency
+        logger.info("GlueSchemaRegistryMuleModule closed");
     }
 }
 
