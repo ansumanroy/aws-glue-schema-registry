@@ -130,6 +130,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
           SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+          # Integration tests will automatically skip if schemas don't exist in registry
+          # Set SKIP_INTEGRATION_TESTS=true to explicitly skip all integration tests
+          SKIP_INTEGRATION_TESTS: ${{ secrets.SKIP_INTEGRATION_TESTS }}
 
       - name: Test all projects
         run: make test
@@ -140,6 +143,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
           SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+          # Integration tests will automatically skip if schemas don't exist in registry
+          # Set SKIP_INTEGRATION_TESTS=true to explicitly skip all integration tests
+          SKIP_INTEGRATION_TESTS: ${{ secrets.SKIP_INTEGRATION_TESTS }}
 
       - name: Publish Java test results
         uses: EnricoMi/publish-unit-test-result-action@v2

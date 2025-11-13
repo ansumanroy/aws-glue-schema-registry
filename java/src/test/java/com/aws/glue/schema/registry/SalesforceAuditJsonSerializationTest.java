@@ -6,12 +6,20 @@ import com.aws.glue.schema.registry.config.TestConfig;
 import com.aws.glue.schema.registry.implementation.JsonSerializer;
 import com.aws.glue.schema.registry.implementation.model.SalesforceAudit;
 import org.junit.jupiter.api.*;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Test class for serializing and deserializing SalesforceAudit objects using JSON format
  * with GlueSchemaRegistryClient.
+ * 
+ * These are integration tests that require:
+ * - AWS credentials configured
+ * - Glue Schema Registry with JSON schema already created
+ * 
+ * Tests will be skipped if schema doesn't exist or AWS credentials are not available.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SalesforceAuditJsonSerializationTest {
@@ -19,11 +27,38 @@ public class SalesforceAuditJsonSerializationTest {
     private static GlueSchemaRegistryClient client;
     private static final String REGISTRY_NAME = TestConfig.getRegistryName();
     private static final String SCHEMA_NAME = TestConfig.getJsonSchemaName();
+    private static boolean schemaExists = false;
     
     @BeforeAll
     static void setUp() {
-        // Initialize the client - assumes AWS credentials are configured
-        client = new GlueSchemaRegistryClient(TestConfig.getAWSRegion(), REGISTRY_NAME);
+        // Check if we should skip integration tests
+        String skipTests = System.getenv("SKIP_INTEGRATION_TESTS");
+        if ("true".equalsIgnoreCase(skipTests)) {
+            System.out.println("Skipping integration tests (SKIP_INTEGRATION_TESTS=true)");
+            return;
+        }
+        
+        try {
+            // Initialize the client - assumes AWS credentials are configured
+            client = new GlueSchemaRegistryClient(TestConfig.getAWSRegion(), REGISTRY_NAME);
+            
+            // Verify the schema exists in the registry
+            try {
+                var schemaResponse = client.getSchema(SCHEMA_NAME);
+                schemaExists = schemaResponse != null && schemaResponse.latestSchemaVersion() != null;
+                if (schemaExists) {
+                    System.out.println("Schema '" + SCHEMA_NAME + "' found in registry '" + REGISTRY_NAME + "'");
+                }
+            } catch (AwsServiceException e) {
+                // EntityNotFoundException is a subclass of AwsServiceException
+                System.out.println("Schema '" + SCHEMA_NAME + "' not found in registry '" + REGISTRY_NAME + 
+                    "'. Skipping integration tests. Error: " + e.getMessage());
+                schemaExists = false;
+            }
+        } catch (Exception e) {
+            System.out.println("Failed to initialize client or check schema. Skipping integration tests. Error: " + e.getMessage());
+            schemaExists = false;
+        }
     }
     
     @AfterAll
@@ -37,6 +72,9 @@ public class SalesforceAuditJsonSerializationTest {
     @Order(1)
     @DisplayName("Test that salesforce-event-schema exists in registry")
     void testSchemaExists() {
+        assumeTrue(schemaExists, "Schema '" + SCHEMA_NAME + "' must exist in registry '" + REGISTRY_NAME + 
+            "' for integration tests to run. Set SKIP_INTEGRATION_TESTS=true to skip these tests.");
+        
         // Verify the schema exists in the registry
         assertDoesNotThrow(() -> {
             var schemaResponse = client.getSchema(SCHEMA_NAME);
@@ -50,6 +88,7 @@ public class SalesforceAuditJsonSerializationTest {
     @Order(2)
     @DisplayName("Test serialization of SalesforceAudit object to JSON")
     void testSerialization() {
+        assumeTrue(schemaExists, "Schema must exist for this test to run");
         // Create a test SalesforceAudit object
         SalesforceAudit auditEvent = new SalesforceAudit(
             "event-12345",
@@ -81,6 +120,7 @@ public class SalesforceAuditJsonSerializationTest {
     @Order(3)
     @DisplayName("Test deserialization of JSON bytes to SalesforceAudit object")
     void testDeserialization() {
+        assumeTrue(schemaExists, "Schema must exist for this test to run");
         // Create a test SalesforceAudit object
         SalesforceAudit originalEvent = new SalesforceAudit(
             "event-67890",
@@ -108,6 +148,7 @@ public class SalesforceAuditJsonSerializationTest {
     @Order(4)
     @DisplayName("Test round-trip serialization and deserialization")
     void testRoundTripSerialization() {
+        assumeTrue(schemaExists, "Schema must exist for this test to run");
         // Create test objects with different values
         SalesforceAudit[] testEvents = {
             new SalesforceAudit("evt-001", "Create", 1609459200000L, "Created new account"),
@@ -148,6 +189,7 @@ public class SalesforceAuditJsonSerializationTest {
     @Order(5)
     @DisplayName("Test serialization with empty strings")
     void testSerializationWithEmptyStrings() {
+        assumeTrue(schemaExists, "Schema must exist for this test to run");
         SalesforceAudit auditEvent = new SalesforceAudit(
             "",
             "",
@@ -170,6 +212,7 @@ public class SalesforceAuditJsonSerializationTest {
     @Order(6)
     @DisplayName("Test serialization with long event details")
     void testSerializationWithLongDetails() {
+        assumeTrue(schemaExists, "Schema must exist for this test to run");
         String longDetails = "This is a very long event details string. ".repeat(100);
         SalesforceAudit auditEvent = new SalesforceAudit(
             "evt-long-001",
@@ -189,6 +232,7 @@ public class SalesforceAuditJsonSerializationTest {
     @Test
     @DisplayName("Test deserialization with invalid JSON data throws exception")
     void testDeserializationWithInvalidData() {
+        assumeTrue(schemaExists, "Schema must exist for this test to run");
         byte[] invalidData = "{invalid json}".getBytes();
         
         assertThrows(SchemaRegistryException.class, () -> {
@@ -199,6 +243,7 @@ public class SalesforceAuditJsonSerializationTest {
     @Test
     @DisplayName("Test deserialization with malformed JSON throws exception")
     void testDeserializationWithMalformedJson() {
+        assumeTrue(schemaExists, "Schema must exist for this test to run");
         byte[] malformedData = "{\"eventId\":\"test\"".getBytes(); // Missing closing brace
         
         assertThrows(SchemaRegistryException.class, () -> {
@@ -209,6 +254,7 @@ public class SalesforceAuditJsonSerializationTest {
     @Test
     @DisplayName("Test JSON output is human-readable")
     void testJsonIsHumanReadable() {
+        assumeTrue(schemaExists, "Schema must exist for this test to run");
         SalesforceAudit auditEvent = new SalesforceAudit(
             "event-readable-001",
             "ReadableTest",
