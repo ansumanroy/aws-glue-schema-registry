@@ -70,6 +70,17 @@ public class JsonSerializer {
         logger.debug("Starting JSON deserialization - schema: {}, data size: {} bytes", 
                 schemaName, data != null ? data.length : 0);
         try {
+            // Validate inputs
+            if (client == null) {
+                throw new IllegalArgumentException("GlueSchemaRegistryClient cannot be null");
+            }
+            if (schemaName == null || schemaName.trim().isEmpty()) {
+                throw new IllegalArgumentException("Schema name cannot be null or empty");
+            }
+            if (data == null || data.length == 0) {
+                throw new IllegalArgumentException("Data cannot be null or empty");
+            }
+            
             // Get schema definition from Glue Schema Registry
             var schemaResponse = client.getSchema(schemaName);
             // Get the latest schema version to get the schema definition
@@ -89,7 +100,18 @@ public class JsonSerializer {
                     schemaName, result != null ? result.getEventId() : "null");
             return result;
             
+        } catch (IllegalArgumentException e) {
+            // Re-throw IllegalArgumentException as-is (input validation errors)
+            logger.error("JSON deserialization failed - invalid input - schema: {}, error: {}", 
+                    schemaName, e.getMessage(), e);
+            throw new SchemaRegistryException("Failed to deserialize JSON to SalesforceAudit: " + e.getMessage(), e);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            // Wrap Jackson JSON processing exceptions (JsonParseException, JsonMappingException, etc.)
+            logger.error("JSON deserialization failed - JSON parsing error - schema: {}, error: {}", 
+                    schemaName, e.getMessage(), e);
+            throw new SchemaRegistryException("Failed to deserialize JSON to SalesforceAudit", e);
         } catch (Exception e) {
+            // Wrap all other exceptions
             logger.error("JSON deserialization failed - schema: {}, error: {}", schemaName, e.getMessage(), e);
             throw new SchemaRegistryException("Failed to deserialize JSON to SalesforceAudit", e);
         }

@@ -233,11 +233,34 @@ public class SalesforceAuditJsonSerializationTest {
     @DisplayName("Test deserialization with invalid JSON data throws exception")
     void testDeserializationWithInvalidData() {
         assumeTrue(schemaExists, "Schema must exist for this test to run");
+        assumeTrue(client != null, "Client must be initialized");
+        assumeTrue(SCHEMA_NAME != null && !SCHEMA_NAME.isEmpty(), "Schema name must be set");
+        
         byte[] invalidData = "{invalid json}".getBytes();
         
-        assertThrows(SchemaRegistryException.class, () -> {
-            JsonSerializer.deserialize(client, SCHEMA_NAME, invalidData);
-        }, "Deserialization should fail for invalid JSON data");
+        // Verify that deserialization throws SchemaRegistryException
+        SchemaRegistryException exception = assertThrows(
+            SchemaRegistryException.class, 
+            () -> {
+                JsonSerializer.deserialize(client, SCHEMA_NAME, invalidData);
+            },
+            "Deserialization should fail for invalid JSON data and throw SchemaRegistryException"
+        );
+        
+        // Verify the exception has the expected cause (JsonParseException or JsonProcessingException)
+        assertNotNull(exception.getCause(), 
+            "Exception should have a cause. Exception message: " + exception.getMessage());
+        
+        Throwable cause = exception.getCause();
+        String causeClassName = cause.getClass().getName();
+        assertTrue(
+            cause instanceof com.fasterxml.jackson.core.JsonParseException 
+            || cause instanceof com.fasterxml.jackson.core.JsonProcessingException
+            || causeClassName.contains("JsonParseException")
+            || causeClassName.contains("JsonProcessingException"),
+            String.format("Exception cause should be JsonParseException or JsonProcessingException, but was: %s (message: %s)", 
+                causeClassName, cause.getMessage())
+        );
     }
     
     @Test
@@ -246,9 +269,16 @@ public class SalesforceAuditJsonSerializationTest {
         assumeTrue(schemaExists, "Schema must exist for this test to run");
         byte[] malformedData = "{\"eventId\":\"test\"".getBytes(); // Missing closing brace
         
-        assertThrows(SchemaRegistryException.class, () -> {
+        SchemaRegistryException exception = assertThrows(SchemaRegistryException.class, () -> {
             JsonSerializer.deserialize(client, SCHEMA_NAME, malformedData);
         }, "Deserialization should fail for malformed JSON");
+        
+        // Verify the exception has the expected cause (JsonParseException)
+        assertNotNull(exception.getCause(), "Exception should have a cause");
+        assertTrue(exception.getCause() instanceof com.fasterxml.jackson.core.JsonParseException 
+                || exception.getCause().getClass().getName().contains("JsonParseException"),
+                "Exception cause should be JsonParseException, but was: " + 
+                (exception.getCause() != null ? exception.getCause().getClass().getName() : "null"));
     }
     
     @Test
