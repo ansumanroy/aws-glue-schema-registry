@@ -149,10 +149,99 @@ $ProjectRoot = Split-Path -Parent $ScriptDir
 # Change to project root
 Push-Location $ProjectRoot
 
+# Function to update version in build files
+function Update-Version {
+    param([string]$Version)
+    
+    Write-ColorOutput "Updating version to $Version in build files..." "Cyan"
+    
+    # Update Java build.gradle
+    $gradleFile = Join-Path $ProjectRoot "java\build.gradle"
+    if (Test-Path $gradleFile) {
+        $content = Get-Content $gradleFile -Raw
+        $content = $content -replace "(?m)^version = ['`"].*['`"]", "version = '$Version'"
+        Set-Content -Path $gradleFile -Value $content -NoNewline
+        Write-ColorOutput "  ✓ Updated java/build.gradle" "Green"
+    }
+    
+    # Update Java pom.xml - update only the project version
+    $pomFile = Join-Path $ProjectRoot "java\pom.xml"
+    if (Test-Path $pomFile) {
+        $content = Get-Content $pomFile -Raw
+        # Match version tag after schema-registry-client artifactId
+        $content = $content -replace "(<artifactId>schema-registry-client</artifactId>\s*<version>)[^<]+(</version>)", "`${1}$Version`${2}"
+        Set-Content -Path $pomFile -Value $content -NoNewline
+        Write-ColorOutput "  ✓ Updated java/pom.xml" "Green"
+    }
+    
+    # Update Python setup.py
+    $setupFile = Join-Path $ProjectRoot "python\setup.py"
+    if (Test-Path $setupFile) {
+        $content = Get-Content $setupFile -Raw
+        $content = $content -replace "(?m)^    version=[`"'][^`"']*[`"']", "    version=`"$Version`""
+        Set-Content -Path $setupFile -Value $content -NoNewline
+        Write-ColorOutput "  ✓ Updated python/setup.py" "Green"
+    }
+    
+    # Update Python __init__.py
+    $initFile = Join-Path $ProjectRoot "python\glue_schema_registry\__init__.py"
+    if (Test-Path $initFile) {
+        $content = Get-Content $initFile -Raw
+        $content = $content -replace "(?m)^__version__ = [`"'][^`"']*[`"']", "__version__ = `"$Version`""
+        Set-Content -Path $initFile -Value $content -NoNewline
+        Write-ColorOutput "  ✓ Updated python/glue_schema_registry/__init__.py" "Green"
+    }
+    
+    Write-ColorOutput "✓ Version updated in all build files" "Green"
+}
+
+# Function to backup build files
+function Backup-BuildFiles {
+    Write-ColorOutput "Backing up build files..." "Cyan"
+    $files = @(
+        "java\build.gradle",
+        "java\pom.xml",
+        "python\setup.py",
+        "python\glue_schema_registry\__init__.py"
+    )
+    
+    foreach ($file in $files) {
+        $filePath = Join-Path $ProjectRoot $file
+        if (Test-Path $filePath) {
+            Copy-Item -Path $filePath -Destination "$filePath.bak" -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+# Function to restore build files
+function Restore-BuildFiles {
+    Write-ColorOutput "Restoring original build files..." "Cyan"
+    $files = @(
+        "java\build.gradle",
+        "java\pom.xml",
+        "python\setup.py",
+        "python\glue_schema_registry\__init__.py"
+    )
+    
+    foreach ($file in $files) {
+        $filePath = Join-Path $ProjectRoot $file
+        $backupPath = "$filePath.bak"
+        if (Test-Path $backupPath) {
+            Move-Item -Path $backupPath -Destination $filePath -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 try {
     # Create release directory
     $ReleaseDir = Join-Path $ProjectRoot "release-artifacts"
     New-Item -ItemType Directory -Force -Path $ReleaseDir | Out-Null
+    
+    # Update versions before building
+    if (-not $SkipBuild) {
+        Backup-BuildFiles
+        Update-Version -Version $Version
+    }
     
     # Build artifacts
     if (-not $SkipBuild) {
@@ -378,8 +467,35 @@ See README.md for installation instructions.
         Write-ColorOutput "To actually create the release, run without -DryRun flag" "Yellow"
     }
     
+    # Optionally restore original versions (uncomment to restore after release)
+    # Note: By default, versions are left updated. Uncomment the line below to restore.
+    # if (-not $SkipBuild -and -not $DryRun) {
+    #     Restore-BuildFiles
+    #     Write-ColorOutput "✓ Original versions restored" "Green"
+    # }
+    
+    # Cleanup backup files
+    if (-not $DryRun) {
+        $backupFiles = @(
+            "java\build.gradle.bak",
+            "java\pom.xml.bak",
+            "python\setup.py.bak",
+            "python\glue_schema_registry\__init__.py.bak"
+        )
+        foreach ($file in $backupFiles) {
+            $filePath = Join-Path $ProjectRoot $file
+            if (Test-Path $filePath) {
+                Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+    
     Write-Host ""
     Write-ColorOutput "=== Release Process Complete ===" "Green"
+    if (-not $SkipBuild -and -not $DryRun) {
+        Write-ColorOutput "Note: Build file versions have been updated to $Version" "Yellow"
+        Write-ColorOutput "To restore original versions, uncomment Restore-BuildFiles call in the script" "Yellow"
+    }
     
 } catch {
     Write-ColorOutput "Error: $_" "Red"

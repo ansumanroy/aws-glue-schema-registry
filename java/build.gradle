@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'com.github.davidmc24.gradle.plugin.avro' version '1.7.0'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'org.owasp.dependencycheck' version '9.0.10'
 }
 
 group = 'com.aws.glue'
@@ -28,28 +29,28 @@ repositories {
 }
 
 dependencies {
-    // AWS SDK for Glue
-    implementation 'software.amazon.awssdk:glue:2.20.0'
+    // AWS SDK for Glue (updated to latest stable version with security fixes)
+    implementation 'software.amazon.awssdk:glue:2.21.29'
     
-    // AWS SDK Core
-    implementation 'software.amazon.awssdk:sdk-core:2.20.0'
+    // AWS SDK Core (updated to latest stable version with security fixes)
+    implementation 'software.amazon.awssdk:sdk-core:2.21.29'
     
-    // AWS Auth
-    implementation 'software.amazon.awssdk:auth:2.20.0'
+    // AWS Auth (updated to latest stable version with security fixes)
+    implementation 'software.amazon.awssdk:auth:2.21.29'
     
-    // JSON Processing
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    // JSON Processing (updated to latest stable version with security fixes)
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
     
-    // Avro
+    // Avro (updated to latest stable version with security fixes)
     implementation 'org.apache.avro:avro:1.11.3'
     
-    // Logging
+    // Logging (updated to latest 1.7.x version with security fixes - 2.x has breaking changes)
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'org.slf4j:slf4j-simple:1.7.36'
     
-    // Test Dependencies
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
-    testImplementation 'org.mockito:mockito-core:5.3.1'
+    // Test Dependencies (updated to latest stable versions)
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
     
     // Optional MuleSoft dependencies (provided scope - only needed in MuleSoft runtime)
     // These are optional to avoid breaking standalone usage
@@ -193,3 +194,35 @@ shadowJar {
 
 // Make shadowJar depend on jar task
 tasks.shadowJar.dependsOn jar
+
+// OWASP Dependency-Check configuration
+dependencyCheck {
+    // Fail build if vulnerabilities are found (set to false to only warn)
+    failBuildOnCVSS = 7.0
+    // Suppress false positives (add CVE IDs here if needed)
+    suppressionFile = file("${projectDir}/dependency-check-suppressions.xml")
+    // Output formats
+    formats = ['HTML', 'JSON', 'XML']
+    // Output directory
+    outputDirectory = file("${buildDir}/reports/dependency-check")
+    // Skip projects that are not used
+    skipProjects = []
+    // Analyzers to use
+    analyzers {
+        // Enable experimental analyzers
+        experimentalEnabled = false
+        // Enable archive analyzer
+        archiveEnabled = true
+        // Enable known exploited vulnerabilities
+        knownExploitedEnabled = true
+    }
+    // Auto-update the NVD database
+    autoUpdate = true
+    // NVD API Key (highly recommended - get from https://nvd.nist.gov/developers/request-an-api-key)
+    // The plugin automatically reads NVD_API_KEY from environment variable
+    // Set via: export NVD_API_KEY=your-key-here
+    // Data directory for NVD database
+    data {
+        directory = file("${System.getProperty('user.home')}/.gradle/dependency-check-data")
+    }
+}

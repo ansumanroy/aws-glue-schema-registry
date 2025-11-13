@@ -177,6 +177,85 @@ cd "$PROJECT_ROOT"
 RELEASE_DIR="$PROJECT_ROOT/release-artifacts"
 mkdir -p "$RELEASE_DIR"
 
+# Function to update version in build files
+update_version() {
+    local version="$1"
+    echo -e "${COLOR_BLUE}Updating version to $version in build files...${COLOR_RESET}"
+    
+    # Update Java build.gradle - match the version line specifically
+    if [ -f "$PROJECT_ROOT/java/build.gradle" ]; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS uses BSD sed - match version line with optional leading whitespace
+            sed -i '' "s/^[[:space:]]*version = ['\"].*['\"]/version = '$version'/" "$PROJECT_ROOT/java/build.gradle"
+        else
+            # Linux uses GNU sed
+            sed -i "s/^[[:space:]]*version = ['\"].*['\"]/version = '$version'/" "$PROJECT_ROOT/java/build.gradle"
+        fi
+        echo -e "${COLOR_GREEN}  ✓ Updated java/build.gradle${COLOR_RESET}"
+    fi
+    
+    # Update Java pom.xml - update only the project version (not dependency versions)
+    if [ -f "$PROJECT_ROOT/java/pom.xml" ]; then
+        # Use a more precise pattern to match only the project version tag
+        # Match: <version>1.0.0-SNAPSHOT</version> that comes after <artifactId>schema-registry-client</artifactId>
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS: Use perl for more reliable in-place editing
+            perl -i -pe "s/(<artifactId>schema-registry-client<\/artifactId>\s*<version>)[^<]+(<\/version>)/\${1}$version\${2}/" "$PROJECT_ROOT/java/pom.xml" 2>/dev/null || \
+            sed -i '' "/<artifactId>schema-registry-client<\/artifactId>/,/<packaging>/s/<version>[^<]*<\/version>/<version>$version<\/version>/" "$PROJECT_ROOT/java/pom.xml"
+        else
+            # Linux: Use sed with more specific pattern
+            sed -i "/<artifactId>schema-registry-client<\/artifactId>/,/<packaging>/s/<version>[^<]*<\/version>/<version>$version<\/version>/" "$PROJECT_ROOT/java/pom.xml"
+        fi
+        echo -e "${COLOR_GREEN}  ✓ Updated java/pom.xml${COLOR_RESET}"
+    fi
+    
+    # Update Python setup.py - match version= specifically
+    if [ -f "$PROJECT_ROOT/python/setup.py" ]; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s/^[[:space:]]*version=[\"'][^\"']*[\"']/    version=\"$version\"/" "$PROJECT_ROOT/python/setup.py"
+        else
+            sed -i "s/^[[:space:]]*version=[\"'][^\"']*[\"']/    version=\"$version\"/" "$PROJECT_ROOT/python/setup.py"
+        fi
+        echo -e "${COLOR_GREEN}  ✓ Updated python/setup.py${COLOR_RESET}"
+    fi
+    
+    # Update Python __init__.py - match __version__ specifically
+    if [ -f "$PROJECT_ROOT/python/glue_schema_registry/__init__.py" ]; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' "s/^__version__ = [\"'][^\"']*[\"']/__version__ = \"$version\"/" "$PROJECT_ROOT/python/glue_schema_registry/__init__.py"
+        else
+            sed -i "s/^__version__ = [\"'][^\"']*[\"']/__version__ = \"$version\"/" "$PROJECT_ROOT/python/glue_schema_registry/__init__.py"
+        fi
+        echo -e "${COLOR_GREEN}  ✓ Updated python/glue_schema_registry/__init__.py${COLOR_RESET}"
+    fi
+    
+    echo -e "${COLOR_GREEN}✓ Version updated in all build files${COLOR_RESET}"
+}
+
+# Backup original versions (for potential restore)
+backup_build_files() {
+    echo -e "${COLOR_BLUE}Backing up build files...${COLOR_RESET}"
+    cp "$PROJECT_ROOT/java/build.gradle" "$PROJECT_ROOT/java/build.gradle.bak" 2>/dev/null || true
+    cp "$PROJECT_ROOT/java/pom.xml" "$PROJECT_ROOT/java/pom.xml.bak" 2>/dev/null || true
+    cp "$PROJECT_ROOT/python/setup.py" "$PROJECT_ROOT/python/setup.py.bak" 2>/dev/null || true
+    cp "$PROJECT_ROOT/python/glue_schema_registry/__init__.py" "$PROJECT_ROOT/python/glue_schema_registry/__init__.py.bak" 2>/dev/null || true
+}
+
+# Restore original versions
+restore_build_files() {
+    echo -e "${COLOR_BLUE}Restoring original build files...${COLOR_RESET}"
+    mv "$PROJECT_ROOT/java/build.gradle.bak" "$PROJECT_ROOT/java/build.gradle" 2>/dev/null || true
+    mv "$PROJECT_ROOT/java/pom.xml.bak" "$PROJECT_ROOT/java/pom.xml" 2>/dev/null || true
+    mv "$PROJECT_ROOT/python/setup.py.bak" "$PROJECT_ROOT/python/setup.py" 2>/dev/null || true
+    mv "$PROJECT_ROOT/python/glue_schema_registry/__init__.py.bak" "$PROJECT_ROOT/python/glue_schema_registry/__init__.py" 2>/dev/null || true
+}
+
+# Update versions before building
+if [ "$SKIP_BUILD" = false ]; then
+    backup_build_files
+    update_version "$VERSION"
+fi
+
 # Build artifacts
 if [ "$SKIP_BUILD" = false ]; then
     echo -e "${COLOR_BLUE}Building artifacts...${COLOR_RESET}"
@@ -402,9 +481,28 @@ else
     echo -e "${COLOR_YELLOW}To actually create the release, run without --dry-run flag${COLOR_RESET}"
 fi
 
+# Optionally restore original versions (uncomment to restore after release)
+# Note: By default, versions are left updated. Uncomment the line below to restore.
+# if [ "$SKIP_BUILD" = false ] && [ "$DRY_RUN" = false ]; then
+#     restore_build_files
+#     echo -e "${COLOR_GREEN}✓ Original versions restored${COLOR_RESET}"
+# fi
+
+# Cleanup backup files (optional)
+if [ "$DRY_RUN" = false ]; then
+    rm -f "$PROJECT_ROOT/java/build.gradle.bak" 2>/dev/null || true
+    rm -f "$PROJECT_ROOT/java/pom.xml.bak" 2>/dev/null || true
+    rm -f "$PROJECT_ROOT/python/setup.py.bak" 2>/dev/null || true
+    rm -f "$PROJECT_ROOT/python/glue_schema_registry/__init__.py.bak" 2>/dev/null || true
+fi
+
 # Cleanup (optional - comment out if you want to keep artifacts)
 # rm -rf "$RELEASE_DIR"
 
 echo ""
 echo -e "${COLOR_GREEN}${COLOR_BOLD}=== Release Process Complete ===${COLOR_RESET}"
+if [ "$SKIP_BUILD" = false ] && [ "$DRY_RUN" = false ]; then
+    echo -e "${COLOR_YELLOW}Note: Build file versions have been updated to $VERSION${COLOR_RESET}"
+    echo -e "${COLOR_YELLOW}To restore original versions, uncomment restore_build_files() call in the script${COLOR_RESET}"
+fi
 

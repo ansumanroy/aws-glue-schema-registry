@@ -1,4 +1,5 @@
 .PHONY: help build test clean java-build java-test java-clean java-jar java-jar-fat java-jar-fat-gradle java-jar-fat-maven java-build-maven java-test-maven java-clean-maven java-jar-maven java-javadoc java-javadoc-gradle java-javadoc-maven java-publish-exchange release python-venv python-build python-test python-clean python-install python-install-dev python-install-package python-docs golang-build golang-test golang-clean golang-install golang-docs check-gradle check-maven check-java check-python check-go setup info docs
+# cve-scan cve-scan-java cve-scan-python cve-scan-golang
 
 # Default target
 .DEFAULT_GOAL := help
@@ -277,6 +278,31 @@ clean: java-clean python-clean golang-clean ## Clean all build artifacts
 	@rm -rf release-artifacts/
 	@echo "$(COLOR_GREEN)✓ All artifacts cleaned$(COLOR_RESET)"
 
+release: ## Create a GitHub release (requires VERSION variable, e.g., make release VERSION=1.0.0)
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(COLOR_RED)Error: VERSION is required. Usage: make release VERSION=1.0.0$(COLOR_RESET)"; \
+		echo "$(COLOR_YELLOW)Optional: DRAFT=true, PRERELEASE=true, NOTES=<file or text>$(COLOR_RESET)"; \
+		exit 1; \
+	fi
+	@REMOTE_URL=$$(git remote -v | grep "^origin" | head -1); \
+	GITHUB_REPO=$$(echo "$$REMOTE_URL" | sed -E 's/.*github\.com[:/]([^/]+\/[^/]+)\.git.*/\1/' || echo "$$REMOTE_URL" | sed -E 's/.*github\.com[:/]([^/]+\/[^/]+).*/\1/'); \
+	if [ -z "$$GITHUB_REPO" ]; then \
+		echo "$(COLOR_RED)Error: Could not determine GitHub repository from git remote$(COLOR_RESET)"; \
+		echo "$(COLOR_YELLOW)Set GITHUB_REPO environment variable (format: owner/repo)$(COLOR_RESET)"; \
+		exit 1; \
+	fi; \
+	RELEASE_ARGS="--version $(VERSION)"; \
+	if [ "$(DRAFT)" = "true" ]; then \
+		RELEASE_ARGS="$$RELEASE_ARGS --draft"; \
+	fi; \
+	if [ "$(PRERELEASE)" = "true" ]; then \
+		RELEASE_ARGS="$$RELEASE_ARGS --prerelease"; \
+	fi; \
+	if [ -n "$(NOTES)" ]; then \
+		RELEASE_ARGS="$$RELEASE_ARGS --notes $(NOTES)"; \
+	fi; \
+	GITHUB_REPO=$$GITHUB_REPO scripts/create-release.sh $$RELEASE_ARGS
+
 ##@ Prerequisites
 
 check-gradle: ## Check if Gradle wrapper is available
@@ -336,6 +362,24 @@ check-go: ## Check if Go is installed
 		echo "Please install Go: https://golang.org/dl/"; \
 		exit 1; \
 	}
+
+##@ Security
+
+# CVE scanning targets (commented out - uncomment when ready to use)
+# cve-scan: cve-scan-java cve-scan-python cve-scan-golang ## Scan all dependencies for CVEs
+# 	@echo "$(COLOR_GREEN)All CVE scans complete. Check reports/ directory for results.$(COLOR_RESET)"
+
+# cve-scan-java: check-java ## Scan Java dependencies for CVEs using OWASP Dependency-Check
+# 	@echo "$(COLOR_BLUE)Scanning Java dependencies for CVEs...$(COLOR_RESET)"
+# 	@bash scripts/scan-java-cves.sh
+
+# cve-scan-python: check-python ## Scan Python dependencies for CVEs using pip-audit
+# 	@echo "$(COLOR_BLUE)Scanning Python dependencies for CVEs...$(COLOR_RESET)"
+# 	@bash scripts/scan-python-cves.sh
+
+# cve-scan-golang: check-go ## Scan Go dependencies for CVEs using govulncheck
+# 	@echo "$(COLOR_BLUE)Scanning Go dependencies for CVEs...$(COLOR_RESET)"
+# 	@bash scripts/scan-golang-cves.sh
 
 ##@ Utilities
 

@@ -1,6 +1,8 @@
 package com.aws.glue.schema.registry.client;
 
 import com.aws.glue.schema.registry.config.GlueSchemaRegistryConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.glue.GlueClient;
@@ -15,6 +17,8 @@ import java.util.List;
  */
 public class GlueSchemaRegistryClient {
     
+    private static final Logger logger = LoggerFactory.getLogger(GlueSchemaRegistryClient.class);
+    
     private final GlueClient glueClient;
     private final String registryName;
     
@@ -25,11 +29,13 @@ public class GlueSchemaRegistryClient {
      * @param registryName Name of the Glue Schema Registry
      */
     public GlueSchemaRegistryClient(Region region, String registryName) {
+        logger.debug("Creating GlueSchemaRegistryClient - registry: {}, region: {}", registryName, region);
         this.glueClient = GlueClient.builder()
                 .region(region)
                 .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
         this.registryName = registryName;
+        logger.info("GlueSchemaRegistryClient created - registry: {}, region: {}", registryName, region);
     }
     
     /**
@@ -39,8 +45,10 @@ public class GlueSchemaRegistryClient {
      * @param registryName Name of the Glue Schema Registry
      */
     public GlueSchemaRegistryClient(GlueClient glueClient, String registryName) {
+        logger.debug("Creating GlueSchemaRegistryClient with existing GlueClient - registry: {}", registryName);
         this.glueClient = glueClient;
         this.registryName = registryName;
+        logger.info("GlueSchemaRegistryClient created with existing client - registry: {}", registryName);
     }
     
     /**
@@ -50,11 +58,15 @@ public class GlueSchemaRegistryClient {
      * @param config GlueSchemaRegistryConfig containing all configuration
      */
     public GlueSchemaRegistryClient(GlueSchemaRegistryConfig config) {
+        logger.debug("Creating GlueSchemaRegistryClient from config - registry: {}, region: {}", 
+                config.getRegistryName(), config.getRegion());
         this.glueClient = GlueClient.builder()
                 .region(config.getRegion())
                 .credentialsProvider(config.getCredentialsProvider())
                 .build();
         this.registryName = config.getRegistryName();
+        logger.info("GlueSchemaRegistryClient created from config - registry: {}, region: {}", 
+                config.getRegistryName(), config.getRegion());
     }
     
     /**
@@ -139,6 +151,7 @@ public class GlueSchemaRegistryClient {
      * @return Schema information
      */
     public GetSchemaResponse getSchema(String schemaName) {
+        logger.debug("Getting schema - registry: {}, schema: {}", registryName, schemaName);
         GetSchemaRequest request = GetSchemaRequest.builder()
                 .schemaId(SchemaId.builder()
                         .registryName(registryName)
@@ -146,7 +159,10 @@ public class GlueSchemaRegistryClient {
                         .build())
                 .build();
         
-        return glueClient.getSchema(request);
+        GetSchemaResponse response = glueClient.getSchema(request);
+        logger.debug("Retrieved schema - registry: {}, schema: {}, latestVersion: {}", 
+                registryName, schemaName, response.latestSchemaVersion());
+        return response;
     }
     
     /**
@@ -157,6 +173,8 @@ public class GlueSchemaRegistryClient {
      * @return Schema version information
      */
     public GetSchemaVersionResponse getSchemaVersion(String schemaName, Long versionNumber) {
+        logger.debug("Getting schema version - registry: {}, schema: {}, version: {}", 
+                registryName, schemaName, versionNumber);
         GetSchemaVersionRequest request = GetSchemaVersionRequest.builder()
                 .schemaId(SchemaId.builder()
                         .registryName(registryName)
@@ -167,7 +185,11 @@ public class GlueSchemaRegistryClient {
                         .build())
                 .build();
         
-        return glueClient.getSchemaVersion(request);
+        GetSchemaVersionResponse response = glueClient.getSchemaVersion(request);
+        logger.debug("Retrieved schema version - registry: {}, schema: {}, version: {}, definition length: {} chars", 
+                registryName, schemaName, versionNumber, 
+                response.schemaDefinition() != null ? response.schemaDefinition().length() : 0);
+        return response;
     }
     
     /**
@@ -228,6 +250,8 @@ public class GlueSchemaRegistryClient {
      * Closes the underlying Glue client.
      */
     public void close() {
+        logger.debug("Closing GlueSchemaRegistryClient - registry: {}", registryName);
         glueClient.close();
+        logger.info("GlueSchemaRegistryClient closed - registry: {}", registryName);
     }
 }

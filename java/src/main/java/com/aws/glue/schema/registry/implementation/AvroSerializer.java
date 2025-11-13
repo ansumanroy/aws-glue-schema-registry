@@ -9,6 +9,8 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -20,6 +22,8 @@ import java.io.ByteArrayOutputStream;
  */
 public class AvroSerializer {
     
+    private static final Logger logger = LoggerFactory.getLogger(AvroSerializer.class);
+    
     /**
      * Serializes a SalesforceAudit object to Avro binary format using the schema from Glue Schema Registry.
      * 
@@ -30,17 +34,21 @@ public class AvroSerializer {
      * @throws SchemaRegistryException if serialization fails
      */
     public static byte[] serialize(GlueSchemaRegistryClient client, String schemaName, SalesforceAudit auditEvent) {
+        logger.debug("Starting Avro serialization - schema: {}, eventId: {}", 
+                schemaName, auditEvent != null ? auditEvent.getEventId() : "null");
         try {
             // Get schema definition from Glue Schema Registry
             var schemaResponse = client.getSchema(schemaName);
             // Get the latest schema version to get the schema definition
             Long latestVersion = schemaResponse.latestSchemaVersion();
+            logger.debug("Retrieved schema version {} for schema {}", latestVersion, schemaName);
             var schemaVersionResponse = client.getSchemaVersion(schemaName, latestVersion);
             String schemaDefinition = schemaVersionResponse.schemaDefinition();
             
             // Parse Avro schema
             Schema.Parser parser = new Schema.Parser();
             Schema schema = parser.parse(schemaDefinition);
+            logger.trace("Parsed Avro schema for {}", schemaName);
             
             // Create a generic record
             GenericRecord record = new GenericData.Record(schema);
@@ -57,9 +65,12 @@ public class AvroSerializer {
             encoder.flush();
             outputStream.close();
             
-            return outputStream.toByteArray();
+            byte[] result = outputStream.toByteArray();
+            logger.debug("Avro serialization completed - schema: {}, size: {} bytes", schemaName, result.length);
+            return result;
             
         } catch (Exception e) {
+            logger.error("Avro serialization failed - schema: {}, error: {}", schemaName, e.getMessage(), e);
             throw new SchemaRegistryException("Failed to serialize SalesforceAudit", e);
         }
     }
@@ -74,17 +85,21 @@ public class AvroSerializer {
      * @throws SchemaRegistryException if deserialization fails
      */
     public static SalesforceAudit deserialize(GlueSchemaRegistryClient client, String schemaName, byte[] data) {
+        logger.debug("Starting Avro deserialization - schema: {}, data size: {} bytes", 
+                schemaName, data != null ? data.length : 0);
         try {
             // Get schema definition from Glue Schema Registry
             var schemaResponse = client.getSchema(schemaName);
             // Get the latest schema version to get the schema definition
             Long latestVersion = schemaResponse.latestSchemaVersion();
+            logger.debug("Retrieved schema version {} for schema {}", latestVersion, schemaName);
             var schemaVersionResponse = client.getSchemaVersion(schemaName, latestVersion);
             String schemaDefinition = schemaVersionResponse.schemaDefinition();
             
             // Parse Avro schema
             Schema.Parser parser = new Schema.Parser();
             Schema schema = parser.parse(schemaDefinition);
+            logger.trace("Parsed Avro schema for {}", schemaName);
             
             // Deserialize from bytes
             ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
@@ -99,9 +114,12 @@ public class AvroSerializer {
             auditEvent.setTimestamp((Long) record.get("timestamp"));
             auditEvent.setEventDetails(record.get("eventDetails").toString());
             
+            logger.debug("Avro deserialization completed - schema: {}, eventId: {}", 
+                    schemaName, auditEvent.getEventId());
             return auditEvent;
             
         } catch (Exception e) {
+            logger.error("Avro deserialization failed - schema: {}, error: {}", schemaName, e.getMessage(), e);
             throw new SchemaRegistryException("Failed to deserialize SalesforceAudit", e);
         }
     }

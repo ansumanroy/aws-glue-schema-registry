@@ -3,7 +3,7 @@ module github.com/aws-glue-schema-registry/golang
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go v1.48.0
+	github.com/aws/aws-sdk-go v1.50.0
 	github.com/linkedin/goavro/v2 v2.12.0
 )
 

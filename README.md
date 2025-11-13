@@ -52,6 +52,12 @@ make java-javadoc        # Generate Javadoc (default: Gradle)
 make python-docs         # Generate Python documentation
 make golang-docs         # Generate Golang documentation
 make docs                # Generate all documentation
+
+# Security scanning
+make cve-scan            # Scan all dependencies for CVEs
+make cve-scan-java       # Scan only Java dependencies
+make cve-scan-python     # Scan only Python dependencies
+make cve-scan-golang     # Scan only Go dependencies
 ```
 
 ### Python Virtual Environment
@@ -313,6 +319,96 @@ make release VERSION=1.0.0
 **Prerequisites**: GitHub CLI (`gh`) must be installed and authenticated.
 
 For detailed instructions, see [RELEASE.md](RELEASE.md).
+
+## Security and CVE Scanning
+
+This project includes automated CVE (Common Vulnerabilities and Exposures) scanning for all dependencies to ensure security.
+
+### Quick Start
+
+```bash
+# Scan all dependencies for CVEs
+make cve-scan
+
+# Scan individual languages
+make cve-scan-java       # Java dependencies (OWASP Dependency-Check)
+make cve-scan-python    # Python dependencies (pip-audit)
+make cve-scan-golang    # Go dependencies (govulncheck)
+```
+
+### Scanning Tools
+
+- **Java**: Uses [OWASP Dependency-Check](https://owasp.org/www-project-dependency-check/) plugin for Gradle and Maven
+- **Python**: Uses [pip-audit](https://pypi.org/project/pip-audit/) to scan against PyPI advisory database
+- **Go**: Uses [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) (official Go vulnerability scanner)
+
+### Reports
+
+Scan reports are generated in the `reports/` directory:
+- `reports/java-cves/` - Java dependency scan reports (HTML, JSON, XML)
+- `reports/python-cves.{json,txt}` - Python dependency scan reports
+- `reports/golang-cves.txt` - Go dependency scan report
+
+### Configuration
+
+**Java (Gradle/Maven):**
+- OWASP Dependency-Check is configured in `java/build.gradle` and `java/pom.xml`
+- Build fails if CVSS score >= 7.0 (configurable)
+- Suppression file: `java/dependency-check-suppressions.xml` (for false positives)
+- **NVD API Key Required**: The NVD API now requires an API key. Get one free at [https://nvd.nist.gov/developers/request-an-api-key](https://nvd.nist.gov/developers/request-an-api-key)
+  ```bash
+  export NVD_API_KEY=your-api-key-here
+  ```
+
+**Running manually:**
+```bash
+# Set NVD API key (recommended)
+export NVD_API_KEY=your-api-key-here
+
+# Gradle
+cd java && ./gradlew dependencyCheckAnalyze
+
+# Maven
+cd java && mvn dependency-check:check
+```
+
+**Python:**
+```bash
+# Install pip-audit (if not already installed)
+pip install pip-audit
+
+# Run scan
+pip-audit -r python/requirements.txt
+```
+
+**Go:**
+```bash
+# Install govulncheck (if not already installed)
+go install golang.org/x/vuln/cmd/govulncheck@latest
+
+# Run scan
+cd golang && govulncheck ./...
+```
+
+### Updating Dependencies
+
+When vulnerabilities are found:
+1. Review the scan reports in `reports/`
+2. Identify vulnerable dependencies and their CVE IDs
+3. Update to secure versions in:
+   - `java/build.gradle` and `java/pom.xml` (Java)
+   - `python/requirements.txt` (Python)
+   - `golang/go.mod` (Go)
+4. Re-run scans to verify fixes
+5. Test thoroughly to ensure compatibility
+
+### Best Practices
+
+- Run CVE scans regularly (e.g., in CI/CD pipeline)
+- Keep dependencies updated to latest secure versions
+- Review and address high-severity vulnerabilities (CVSS >= 7.0) promptly
+- Document any suppressions for false positives
+- Test thoroughly after updating dependencies
 
 ## License
 
