@@ -1,4 +1,4 @@
-.PHONY: help build test clean java-build java-test java-clean java-jar java-jar-fat java-jar-fat-gradle java-jar-fat-maven java-build-maven java-test-maven java-clean-maven java-jar-maven java-javadoc java-javadoc-gradle java-javadoc-maven java-publish-exchange release python-venv python-build python-test python-clean python-install python-install-dev python-install-package python-docs golang-build golang-test golang-clean golang-install golang-docs check-gradle check-maven check-java check-python check-go setup info docs
+.PHONY: help build test clean java-build java-test java-clean java-jar java-jar-fat java-jar-fat-gradle java-jar-fat-maven java-build-maven java-test-maven java-clean-maven java-jar-maven java-javadoc java-javadoc-gradle java-javadoc-maven java-publish-exchange release python-venv python-build python-test python-clean python-install python-install-dev python-install-package python-docs golang-build golang-test golang-clean golang-install golang-docs check-gradle check-maven check-java check-python check-go setup info docs cve-scan cve-scan-java cve-scan-python cve-scan-golang
 
 # Default target
 .DEFAULT_GOAL := help
@@ -361,6 +361,23 @@ check-go: ## Check if Go is installed
 		echo "Please install Go: https://golang.org/dl/"; \
 		exit 1; \
 	}
+
+##@ Security
+
+cve-scan: cve-scan-java cve-scan-python cve-scan-golang ## Scan all dependencies for CVEs
+	@echo "$(COLOR_GREEN)All CVE scans complete. Check reports/ directory for results.$(COLOR_RESET)"
+
+cve-scan-java: check-java ## Scan Java dependencies for CVEs using OWASP Dependency-Check
+	@echo "$(COLOR_BLUE)Scanning Java dependencies for CVEs...$(COLOR_RESET)"
+	@bash scripts/scan-java-cves.sh
+
+cve-scan-python: check-python ## Scan Python dependencies for CVEs using pip-audit
+	@echo "$(COLOR_BLUE)Scanning Python dependencies for CVEs...$(COLOR_RESET)"
+	@bash scripts/scan-python-cves.sh
+
+cve-scan-golang: check-go ## Scan Go dependencies for CVEs using govulncheck
+	@echo "$(COLOR_BLUE)Scanning Go dependencies for CVEs...$(COLOR_RESET)"
+	@bash scripts/scan-golang-cves.sh
 
 ##@ Utilities
 

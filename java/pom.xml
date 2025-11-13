@@ -17,12 +17,12 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.release>17</maven.compiler.release>
-        <junit.version>5.9.2</junit.version>
-        <aws.sdk.version>2.20.0</aws.sdk.version>
+        <junit.version>5.10.1</junit.version>
+        <aws.sdk.version>2.21.29</aws.sdk.version>
         <avro.version>1.11.3</avro.version>
-        <jackson.version>2.15.2</jackson.version>
+        <jackson.version>2.16.1</jackson.version>
         <slf4j.version>1.7.36</slf4j.version>
-        <mockito.version>5.3.1</mockito.version>
+        <mockito.version>5.11.0</mockito.version>
     </properties>
 
     <repositories>
@@ -264,6 +264,35 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- OWASP Dependency-Check Plugin -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.0.9</version>
+                <configuration>
+                    <failBuildOnCVSS>7.0</failBuildOnCVSS>
+                    <suppressionFiles>
+                        <suppressionFile>${project.basedir}/dependency-check-suppressions.xml</suppressionFile>
+                    </suppressionFiles>
+                    <formats>
+                        <format>HTML</format>
+                        <format>JSON</format>
+                        <format>XML</format>
+                    </formats>
+                    <outputDirectory>${project.build.directory}/reports/dependency-check</outputDirectory>
+                    <autoUpdate>true</autoUpdate>
+                    <dataDirectory>${user.home}/.m2/dependency-check-data</dataDirectory>
+                    <knownExploitedEnabled>true</knownExploitedEnabled>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
