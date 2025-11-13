@@ -86,12 +86,12 @@
                        path="/audit/json-to-avro"
                        allowedMethods="POST"/>
         
-        <!-- Step 1: Convert incoming JSON payload to SalesforceAudit object -->
-        <!-- This uses the utility method that doesn't require schema registry access -->
-        <java:new doc:name="Create Mule Module" 
-                  class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
-                  constructor="create()"
-                  targetVariable="muleModule"/>
+        <!-- Step 1: Create module instance using static factory method -->
+        <!-- This reads AWS credentials and config from MuleSoft properties -->
+        <java:invoke doc:name="Create Mule Module" 
+                     class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                     method="create()"
+                     targetVariable="muleModule"/>
         
         <!-- Convert JSON string to SalesforceAudit object -->
         <java:invoke doc:name="Convert JSON to Audit Object" 
@@ -166,11 +166,11 @@
                        path="/audit/json-to-json"
                        allowedMethods="POST"/>
         
-        <!-- Create module instance -->
-        <java:new doc:name="Create Mule Module" 
-                  class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
-                  constructor="create()"
-                  targetVariable="muleModule"/>
+        <!-- Create module instance using static factory method -->
+        <java:invoke doc:name="Create Mule Module" 
+                     class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                     method="create()"
+                     targetVariable="muleModule"/>
         
         <!-- Convert JSON string to SalesforceAudit -->
         <java:invoke doc:name="Convert JSON to Audit Object" 
@@ -256,11 +256,11 @@
             </ee:message>
         </ee:transform>
         
-        <!-- Create GlueSchemaRegistryMuleModule instance -->
-        <java:new doc:name="Create Mule Module" 
-                  class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
-                  constructor="create()"
-                  targetVariable="muleModule"/>
+        <!-- Create GlueSchemaRegistryMuleModule instance using static factory method -->
+        <java:invoke doc:name="Create Mule Module" 
+                     class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                     method="create()"
+                     targetVariable="muleModule"/>
         
         <!-- Serialize to Avro using Java module -->
         <java:invoke doc:name="Serialize Avro" 
@@ -283,10 +283,11 @@
                        config-ref="HTTP_Listener_config" 
                        path="/audit/deserialize"/>
         
-        <!-- Create GlueSchemaRegistryMuleModule instance -->
-        <java:new doc:name="Create Mule Module" 
-                  class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
-                  constructor="create()"/>
+        <!-- Create GlueSchemaRegistryMuleModule instance using static factory method -->
+        <java:invoke doc:name="Create Mule Module" 
+                     class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                     method="create()"
+                     targetVariable="muleModule"/>
         
         <!-- Deserialize from Avro -->
         <java:invoke doc:name="Deserialize Avro" 

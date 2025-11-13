@@ -95,10 +95,10 @@ This example demonstrates the complete flow:
                    path="/audit/json-to-avro"
                    allowedMethods="POST"/>
     
-    <!-- Step 1: Create module instance (reads config from properties) -->
-    <java:new class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
-              constructor="create()"
-              targetVariable="muleModule"/>
+    <!-- Step 1: Create module instance using static factory method (reads config from properties) -->
+    <java:invoke class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
+                 method="create()"
+                 targetVariable="muleModule"/>
     
     <!-- Step 2: Convert JSON string to SalesforceAudit object -->
     <java:invoke class="com.aws.glue.schema.registry.mule.GlueSchemaRegistryMuleModule"
