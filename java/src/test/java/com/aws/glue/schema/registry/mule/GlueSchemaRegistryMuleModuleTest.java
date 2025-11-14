@@ -473,14 +473,13 @@ class GlueSchemaRegistryMuleModuleTest {
         }, "Should throw exception when JSON string is empty");
     }
     
-    //TODO: Fails in github, investigate why
-    // @Test
-    // @DisplayName("Test fromJsonString() with whitespace-only string throws exception")
-    // void testFromJsonStringWithWhitespace() {
-    //     assertThrows(RuntimeException.class, () -> {
-    //         module.fromJsonString("   ");
-    //     }, "Should throw exception when JSON string is only whitespace");
-    // }
+    @Test
+    @DisplayName("Test fromJsonString() with whitespace-only string throws exception")
+    void testFromJsonStringWithWhitespace() {
+        assertThrows(RuntimeException.class, () -> {
+            module.fromJsonString("   ");
+        }, "Should throw exception when JSON string is only whitespace");
+    }
     
     @Test
     @DisplayName("Test fromJsonString() with invalid JSON throws exception")
