@@ -4,8 +4,8 @@ import com.aws.glue.schema.registry.client.GlueSchemaRegistryClient;
 import com.aws.glue.schema.registry.client.SchemaRegistryException;
 import com.aws.glue.schema.registry.implementation.model.SalesforceAudit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 
@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class JsonSerializer {
     
-    private static final Logger logger = LoggerFactory.getLogger(JsonSerializer.class);
+    private static final Logger logger = LogManager.getLogger(JsonSerializer.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     
     /**

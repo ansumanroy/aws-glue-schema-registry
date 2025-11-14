@@ -21,7 +21,7 @@
         <aws.sdk.version>2.21.29</aws.sdk.version>
         <avro.version>1.11.3</avro.version>
         <jackson.version>2.16.1</jackson.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <log4j.version>2.23.1</log4j.version>
         <mockito.version>5.11.0</mockito.version>
     </properties>
 
@@ -69,16 +69,16 @@
             <version>${avro.version}</version>
         </dependency>
 
-        <!-- Logging -->
+        <!-- Logging - using Log4j 2 -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
         </dependency>
 
         <!-- Test Dependencies -->

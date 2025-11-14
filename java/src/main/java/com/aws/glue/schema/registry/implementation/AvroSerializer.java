@@ -9,8 +9,8 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,7 +22,7 @@ import java.io.ByteArrayOutputStream;
  */
 public class AvroSerializer {
     
-    private static final Logger logger = LoggerFactory.getLogger(AvroSerializer.class);
+    private static final Logger logger = LogManager.getLogger(AvroSerializer.class);
     
     /**
      * Serializes a SalesforceAudit object to Avro binary format using the schema from Glue Schema Registry.

@@ -1,7 +1,7 @@
 package com.aws.glue.schema.registry.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
@@ -15,7 +15,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  */
 public class MuleSoftConfigProvider {
     
-    private static final Logger logger = LoggerFactory.getLogger(MuleSoftConfigProvider.class);
+    private static final Logger logger = LogManager.getLogger(MuleSoftConfigProvider.class);
     
     private static final String MULE_CONFIG_PROPERTY_PREFIX = "mule.app.";
     private static final String MULE_SECURE_PROPERTY_PREFIX = "secure::";

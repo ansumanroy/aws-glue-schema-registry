@@ -1,8 +1,8 @@
 package com.aws.glue.schema.registry.client;
 
 import com.aws.glue.schema.registry.config.GlueSchemaRegistryConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.glue.GlueClient;
@@ -17,7 +17,7 @@ import java.util.List;
  */
 public class GlueSchemaRegistryClient {
     
-    private static final Logger logger = LoggerFactory.getLogger(GlueSchemaRegistryClient.class);
+    private static final Logger logger = LogManager.getLogger(GlueSchemaRegistryClient.class);
     
     private final GlueClient glueClient;
     private final String registryName;
