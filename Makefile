@@ -171,9 +171,10 @@ python-install-dev: python-venv ## Install Python development dependencies in vi
 
 python-test: python-install-dev ## Run Python tests in virtual environment
 	@echo "$(COLOR_BLUE)Running Python tests in virtual environment...$(COLOR_RESET)"
+	@mkdir -p $(PYTHON_DIR)/junit
 	@cd $(PYTHON_DIR) && \
 		. venv/bin/activate && \
-		pytest tests/ -v
+		pytest tests/ -v --junitxml=junit/test-results.xml
 
 python-build: python-venv ## Build Python package (wheel and source distribution)
 	@echo "$(COLOR_BLUE)Building Python package...$(COLOR_RESET)"
@@ -220,7 +221,20 @@ golang-build: check-go golang-install ## Build Golang project
 
 golang-test: check-go golang-install ## Run Golang tests
 	@echo "$(COLOR_BLUE)Running Golang tests...$(COLOR_RESET)"
-	cd $(GOLANG_DIR) && go test ./... -v
+	@mkdir -p $(GOLANG_DIR)/junit
+	@cd $(GOLANG_DIR) && \
+		if command -v gotestsum >/dev/null 2>&1; then \
+			gotestsum --junitfile junit/test-results.xml --format standard-verbose ./...; \
+		else \
+			echo "$(COLOR_YELLOW)gotestsum not found, installing...$(COLOR_RESET)"; \
+			go install gotest.tools/gotestsum@latest && \
+			export PATH="$$(go env GOPATH)/bin:$$PATH" && \
+			gotestsum --junitfile junit/test-results.xml --format standard-verbose ./... || \
+			(echo "$(COLOR_YELLOW)Falling back to go-junit-report...$(COLOR_RESET)" && \
+			go test ./... -v -json 2>&1 | go install github.com/jstemmer/go-junit-report@latest && \
+			export PATH="$$(go env GOPATH)/bin:$$PATH" && \
+			go test ./... -v 2>&1 | go-junit-report > junit/test-results.xml); \
+		fi
 
 golang-docs: check-go ## Generate Golang documentation using godoc
 	@echo "$(COLOR_BLUE)Generating Golang documentation...$(COLOR_RESET)"

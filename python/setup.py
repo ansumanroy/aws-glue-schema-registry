@@ -9,7 +9,7 @@ long_description = readme_file.read_text(encoding="utf-8") if readme_file.exists
 
 setup(
     name="glue-schema-registry",
-    version="1.0.32",
+    version="1.0.33",
     author="AWS Glue Schema Registry",
     description="Python client for AWS Glue Schema Registry",
     long_description=long_description,

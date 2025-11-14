@@ -55,6 +55,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: golang/go.sum
 
       - name: Debug - Verify secrets availability
         run: |
@@ -157,10 +158,18 @@ jobs:
       - name: Publish Python test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
+        continue-on-error: true
         with:
           files: 'python/junit/test-results.xml'
           check_name: 'Python Test Results'
-          continue_on_error: true
+
+      - name: Publish Golang test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        continue-on-error: true
+        with:
+          files: 'golang/junit/test-results.xml'
+          check_name: 'Golang Test Results'
 
   documentation:
     name: Generate Documentation
@@ -187,6 +196,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: golang/go.sum
 
       - name: Generate all documentation
         run: make docs
@@ -230,6 +240,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: golang/go.sum
 
       - name: Build Java JAR
         run: make java-jar
@@ -252,18 +263,18 @@ jobs:
       - name: Upload Python artifacts
         uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: python-artifacts
           path: python/dist/*
           retention-days: 30
-          continue-on-error: true
 
       - name: Upload Golang artifacts
         uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: golang-artifacts
           path: golang/
           retention-days: 30
-          continue-on-error: true
 

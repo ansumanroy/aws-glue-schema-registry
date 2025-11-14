@@ -49,6 +49,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: golang/go.sum
 
       - name: Debug - Verify secrets availability
         run: |
@@ -146,4 +147,20 @@ jobs:
         with:
           files: 'java/build/test-results/**/*.xml'
           check_name: 'Java Test Results'
+
+      - name: Publish Python test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        continue-on-error: true
+        with:
+          files: 'python/junit/test-results.xml'
+          check_name: 'Python Test Results'
+
+      - name: Publish Golang test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        continue-on-error: true
+        with:
+          files: 'golang/junit/test-results.xml'
+          check_name: 'Golang Test Results'
 

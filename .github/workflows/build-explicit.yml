@@ -279,6 +279,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: golang/go.sum
 
       - name: Download dependencies
         run: |
@@ -329,7 +330,14 @@ jobs:
       - name: Test
         run: |
           cd golang
-          go test ./... -v
+          mkdir -p junit
+          if command -v gotestsum >/dev/null 2>&1; then
+            gotestsum --junitfile junit/test-results.xml --format standard-verbose ./...
+          else
+            echo "Installing gotestsum..."
+            go install gotest.tools/gotestsum@latest
+            $(go env GOPATH)/bin/gotestsum --junitfile junit/test-results.xml --format standard-verbose ./...
+          fi
         env:
           GLUE_REGISTRY_NAME: ${{ secrets.GLUE_REGISTRY_NAME }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -337,6 +345,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SCHEMA_NAME_AVRO: ${{ secrets.SCHEMA_NAME_AVRO }}
           SCHEMA_NAME_JSON: ${{ secrets.SCHEMA_NAME_JSON }}
+
+      - name: Publish Golang test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        continue-on-error: true
+        with:
+          files: 'golang/junit/test-results.xml'
+          check_name: 'Golang Test Results'
 
       - name: Upload Golang artifacts
         uses: actions/upload-artifact@v4
