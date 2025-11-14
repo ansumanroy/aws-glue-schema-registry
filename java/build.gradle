@@ -78,22 +78,18 @@ sourceSets {
 test {
     useJUnitPlatform()
     testLogging {
-        // Show all test events including passed tests
-        events 'passed', 'skipped', 'failed', 'standard_out', 'standard_error'
-        exceptionFormat 'full'
-        // Show standard output and errors
-        showStandardStreams = true
-        showExceptions = true
-        showCauses = true
-        showStackTraces = true
-        // Show detailed output for each test
+        // Show test events but suppress detailed output
+        events 'passed', 'skipped', 'failed'
+        // Suppress stack traces - only show exception messages
+        exceptionFormat 'short'
+        // Don't show standard output/errors to reduce noise
+        showStandardStreams = false
+        showExceptions = false
+        showCauses = false
+        showStackTraces = false
+        // Show test class and method names
         displayGranularity = 2
         minGranularity = 2
-        // Show test class and method names for passed tests
-        info {
-            events 'started', 'passed', 'skipped', 'failed', 'standard_out', 'standard_error'
-            exceptionFormat 'full'
-        }
     }
     // Force test execution (don't use cache) - comment out if you want caching
     // outputs.upToDateWhen { false }

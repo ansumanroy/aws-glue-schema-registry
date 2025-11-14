@@ -174,6 +174,9 @@
                     </includes>
                     <testFailureIgnore>false</testFailureIgnore>
                     <printSummary>true</printSummary>
+                    <!-- Suppress stack traces in output -->
+                    <trimStackTrace>true</trimStackTrace>
+                    <reportFormat>brief</reportFormat>
                 </configuration>
             </plugin>
 
