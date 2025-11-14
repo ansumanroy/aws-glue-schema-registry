@@ -77,12 +77,33 @@ class MuleSoftConfigProviderTest {
     @Test
     @DisplayName("Test fromMuleSoftProperties() uses default values when properties are missing")
     void testFromMuleSoftPropertiesUsesDefaults() {
-        // Don't set any properties
+        // Don't set any system properties
+        // Note: Environment variables may be set (e.g., in CI/CD), which is valid behavior
+        // The method should use defaults only if neither system properties nor env vars are set
+        
+        // Check if environment variables are set
+        String envRegistryName = System.getenv("GLUE_REGISTRY_NAME");
+        String envRegion = System.getenv("AWS_REGION");
+        
         GlueSchemaRegistryConfig config = MuleSoftConfigProvider.fromMuleSoftProperties();
         
         assertNotNull(config);
-        assertEquals("glue-schema-registry", config.getRegistryName());
-        assertEquals(Region.US_EAST_1, config.getRegion());
+        
+        if (envRegistryName != null && !envRegistryName.isEmpty()) {
+            // If environment variable is set, it should be used (valid behavior)
+            assertEquals(envRegistryName, config.getRegistryName());
+        } else {
+            // Otherwise, should use default
+            assertEquals("glue-schema-registry", config.getRegistryName());
+        }
+        
+        if (envRegion != null && !envRegion.isEmpty()) {
+            // If environment variable is set, it should be used (valid behavior)
+            assertEquals(Region.of(envRegion), config.getRegion());
+        } else {
+            // Otherwise, should use default
+            assertEquals(Region.US_EAST_1, config.getRegion());
+        }
     }
     
     @Test
